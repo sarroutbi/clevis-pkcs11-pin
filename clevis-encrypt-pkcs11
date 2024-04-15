@@ -53,7 +53,7 @@ if ! pkcs15-tool --read-public-key 03 > "${PKEY}"; then
 fi
 
 if ! jwk_enc="$(printf '%s' "${jwk}" | openssl rsautl -encrypt -pubin \
-                                       -inkey "${PKEY}" \
+                                       -inkey "${PKEY}" 2>/dev/null \
                                      | jose b64 enc -I-)"; then
     echo "Unable to encrypt JWK with PKCS#11 public key" >&2
     exit 1
