@@ -11,6 +11,7 @@ EOF
 
 123456
 EOF
+"${YUBICO_HANDLER}" list
 "${YUBICO_HANDLER}" piv info
 
 rm -v "${PUBKEY_FILE}"
