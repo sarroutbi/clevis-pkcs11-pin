@@ -17,7 +17,9 @@ install() {
         /usr/lib64/opensc-pkcs11.so \
         /usr/lib64/pkcs11/opensc-pkcs11.so \
         pkcs11-tool \
-        clevis-decrypt-pkcs11
+        clevis-decrypt-pkcs11 \
+        opensc-tool \
+        systemd-cryptenroll
 
     dracut_need_initqueue
 }
