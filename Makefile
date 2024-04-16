@@ -1,4 +1,4 @@
-.PHONY: install test all clean dracut_clean dracut_install
+.PHONY: install test all clean dracut_clean dracut_install list
 
 DRACUT_TARGET_DIR?=/usr/lib/dracut/modules.d/99clevis-pkcs11-dracut
 DRACUT_PCSCD_TARGET_DIR?=/usr/lib/dracut/modules.d/99pcscd-cryptsetup
@@ -32,6 +32,7 @@ check: test
 	@true
 
 test:
+	@echo "--------------------------------------------------------------------------------"
 	echo secret | clevis encrypt pkcs11 '{}' | clevis decrypt
 	@echo "--------------------------------------------------------------------------------"
 	pkcs11-tool -pkcs11-tool --login --test -p "$(PIN)"-login --test -p $(PIN)
@@ -40,4 +41,11 @@ test:
 	@echo "--------------------------------------------------------------------------------"
 	test -b $(ENCRYPTED_DEVICE) && clevis luks pass -d $(ENCRYPTED_DEVICE) -s $(CLEVIS_SLOT)
 	@echo
+	@echo "--------------------------------------------------------------------------------"
+
+list:
+	@echo "--------------------------------------------------------------------------------"
+	opensc-tool -l
+	@echo "--------------------------------------------------------------------------------"
+	pkcs11-tool -L
 	@echo "--------------------------------------------------------------------------------"
