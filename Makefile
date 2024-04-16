@@ -4,10 +4,10 @@ DRACUT_TARGET_DIR?=/usr/lib/dracut/modules.d/99clevis-pkcs11-dracut
 DRACUT_PCSCD_TARGET_DIR?=/usr/lib/dracut/modules.d/99pcscd-cryptsetup
 
 all:
-	true
+	@true
 
 clean:
-	true
+	@true
 
 install:
 	cp -rfav *-pkcs11 /usr/bin/
@@ -26,7 +26,7 @@ dracut_pcscd_clean:
 	rm -rfv $(DRACUT_PCSCD_TARGET_DIR)/*
 
 check: test
-	-true
+	@true
 
 test:
 	echo secret | clevis encrypt pkcs11 '{}' | clevis decrypt
