@@ -2,6 +2,8 @@
 
 DRACUT_TARGET_DIR?=/usr/lib/dracut/modules.d/99clevis-pkcs11-dracut
 DRACUT_PCSCD_TARGET_DIR?=/usr/lib/dracut/modules.d/99pcscd-cryptsetup
+ENCRYPTED_DEVICE?=/dev/nvme0n1p2
+CLEVIS_SLOT?=1
 
 all:
 	@true
@@ -30,3 +32,7 @@ check: test
 
 test:
 	echo secret | clevis encrypt pkcs11 '{}' | clevis decrypt
+	test -b $(ENCRYPTED_DEVICE) && clevis luks pass -d $(ENCRYPTED_DEVICE) -s $(CLEVIS_SLOT)
+	@echo
+	test -b $(ENCRYPTED_DEVICE) && clevis luks list -d $(ENCRYPTED_DEVICE) -s $(CLEVIS_SLOT)
+	@echo
