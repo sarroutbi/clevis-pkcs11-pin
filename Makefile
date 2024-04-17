@@ -32,13 +32,22 @@ dracut_pcscd_clean:
 check: test
 	@true
 
-test:
+test: clevis-encrypt-test pkcs-tool-test clevis-luks-list-test clevis-luks-pass-test
+	@true
+
+clevis-encrypt-test:
 	@echo "--------------------------------------------------------------------------------"
 	echo secret | clevis encrypt pkcs11 '{}' | clevis decrypt
+
+pkcs-tool-test:
 	@echo "--------------------------------------------------------------------------------"
 	pkcs11-tool -pkcs11-tool --login --test -p "$(PIN)"-login --test -p $(PIN)
+
+clevis-luks-list-test:
 	@echo "--------------------------------------------------------------------------------"
 	test -b $(ENCRYPTED_DEVICE) && clevis luks list -d $(ENCRYPTED_DEVICE) -s $(CLEVIS_SLOT)
+
+clevis-luks-pass-test:
 	@echo "--------------------------------------------------------------------------------"
 	test -b $(ENCRYPTED_DEVICE) && clevis luks pass -d $(ENCRYPTED_DEVICE) -s $(CLEVIS_SLOT)
 	@echo
