@@ -14,6 +14,7 @@ clean:
 
 install:
 	cp -rfav *-pkcs11 /usr/bin/
+	cp -rfav clevis-luks-askpass /usr/libexec/
 
 dracut_install:
 	cp -rfav dracut/* $(DRACUT_TARGET_DIR)/
