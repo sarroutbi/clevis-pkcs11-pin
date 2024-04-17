@@ -1,0 +1,27 @@
+--- /usr/libexec/clevis-luks-askpass	2024-03-12 01:00:00.000000000 +0100
++++ /usr/libexec/clevis-luks-askpass	2024-04-17 15:03:40.264047545 +0200
+@@ -36,6 +36,16 @@
+ done
+ 
+ while true; do
++    echo "pkcs11: starting pcscd if not available ..."
++    echo -e "pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
++    if ! ps auxf | grep [p]cscd;
++    then
++        echo "pkcs11: starting pcscd ..."
++        pcscd --disable-polkit
++        sleep 0.5
++        continue
++    fi
++
+     for question in "${path}"/ask.*; do
+         # question will expand to itself, in case no files match, so we verify
+         # whether it actually exists, before proceeding.
+@@ -53,6 +63,7 @@
+         [ -b "${d}" ] || continue
+         [ -S "${s}" ] || continue
+ 
++        echo -e "pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
+         if ! pt="$(clevis_luks_unlock_device "${d}")" || [ -z "${pt}" ]; then
+             continue
+         fi
