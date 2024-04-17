@@ -41,7 +41,7 @@ while true; do
     if ! ps auxf | grep [p]cscd;
     then
         echo "pkcs11: starting pcscd ..."
-        /usr/sbin/pcscd --disable-polkit
+        pcscd --disable-polkit
     fi
 
     for question in "${path}"/ask.*; do
@@ -61,8 +61,7 @@ while true; do
         [ -b "${d}" ] || continue
         [ -S "${s}" ] || continue
 
-
-	echo -e "pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
+        echo -e "pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
         if ! pt="$(clevis_luks_unlock_device "${d}")" || [ -z "${pt}" ]; then
             continue
         fi
