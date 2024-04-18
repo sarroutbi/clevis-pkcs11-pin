@@ -14,7 +14,7 @@ clean:
 
 install:
 	cp -rfav *-pkcs11 /usr/bin/
-	-(cd / ; sudo patch -N -p0) < clevis-luks-askpass.patch
+	-(cd / ; patch --dry-run -p0 -N && sudo patch -p0 -N) < clevis-luks-askpass.patch
 
 dracut_install:
 	cp -rfav dracut/* $(DRACUT_TARGET_DIR)/
