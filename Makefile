@@ -1,4 +1,4 @@
-.PHONY: install test all clean dracut_clean dracut_install list
+.PHONY: install test all clean dracut_clean dracut_install info
 
 DRACUT_TARGET_DIR?=/usr/lib/dracut/modules.d/99clevis-pkcs11-dracut
 DRACUT_PCSCD_TARGET_DIR?=/usr/lib/dracut/modules.d/99pcscd-cryptsetup
