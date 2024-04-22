@@ -56,7 +56,7 @@ clevis-luks-pass-test:
 	test -b $(ENCRYPTED_DEVICE) && clevis luks pass -d $(ENCRYPTED_DEVICE) -s $(CLEVIS_SLOT)
 	@echo
 
-info: opensc-tool-info pkcs11-tool-info
+info: opensc-tool-info pkcs11-tool-info p11-kit-info
 
 opensc-tool-info:
 	@echo "--------------------------------------------------------------------------------"
@@ -71,3 +71,7 @@ pkcs11-tool-info:
 	pkcs11-tool -L
 	@echo "--------------------------------------------------------------------------------"
 	pkcs11-tool -M
+
+p11-kit-info:
+	@echo "--------------------------------------------------------------------------------"
+	command -v p11-kit && p11-kit list-modules
