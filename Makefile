@@ -4,9 +4,10 @@ DRACUT_TARGET_DIR?=/usr/lib/dracut/modules.d/99clevis-pkcs11-dracut
 DRACUT_PCSCD_TARGET_DIR?=/usr/lib/dracut/modules.d/99pcscd-cryptsetup
 ENCRYPTED_DEVICE?=/dev/nvme0n1p2
 CLEVIS_SLOT?=1
+CLEVIS_LUKS_ASKPASS_PATCH=clevis-luks-askpass.patch
 PIN?=123456
 
-all:
+all: check
 	@true
 
 clean:
@@ -18,7 +19,7 @@ install_bin:
 	cp -rfav *-pkcs11 /usr/bin/
 
 install_libexec:
-	-(cd / ; patch --dry-run -p0 -N && patch -p0 -N) < clevis-luks-askpass.patch
+	-(cd / ; patch --dry-run -p0 -N) < $(CLEVIS_LUKS_ASKPASS_PATCH) && (cd / ; patch -p0 -N) < $(CLEVIS_LUKS_ASKPASS_PATCH)
 
 dracut_install:
 	cp -rfav dracut/* $(DRACUT_TARGET_DIR)/

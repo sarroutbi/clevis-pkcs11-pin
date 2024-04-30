@@ -42,6 +42,8 @@ while true; do
     then
         echo "pkcs11: starting pcscd ..."
         pcscd --disable-polkit
+        sleep 0.5
+        continue
     fi
 
     for question in "${path}"/ask.*; do
