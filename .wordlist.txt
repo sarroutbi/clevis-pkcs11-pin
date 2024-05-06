@@ -1,0 +1,14 @@
+CLI
+NBDE
+openssl
+OAEP
+OpenSC
+PCSC
+pkcs
+PKCS
+PKCS#11
+PolicyKit
+RSA
+TPM
+URI
+URIs
