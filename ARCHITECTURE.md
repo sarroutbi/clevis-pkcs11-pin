@@ -15,7 +15,7 @@ As part of a new feature, Clevis PKCS#11 pin will implement code for a user to p
 
 Clevis will perform the role of a PKCS#11 application, as described in the [RFC 7512: The PKCS #11 URI Scheme][2]. Clevis software will be extended through a new pin, so that it can be configured according to the information detailed in that RFC.
 
-PKCS#11 protocol determines that a PIN must be configured into the hardware device so that unlocking process is successful. Clevis will allow users to unlock a particular encrypted disk, so that the user does not have to provide the PIN everytime unlocking is needed. User will configure the PIN in the device, and will provide a mean to notify that PIN to Clevis.
+PKCS#11 protocol determines that a PIN must be configured into the hardware device so that unlocking process is successful. Clevis will allow users to unlock a particular encrypted disk, so that the user does not have to provide the PIN every time unlocking is needed. User will configure the PIN in the device, and will provide a mean to notify that PIN to Clevis.
 
 Initially, RFC7512 defines a mechanism to specify a special kind of URI (the `pkcs11` URI), that allows identifying both a device and also the information required for it to be unlocked. Special attention deserves the parameters `pin-value` and `pin-source`, which allow specifying the value of the PIN or the location of the PIN respectively. `pin-source` usage is preferred to `pin-value`, due to security constraints. However, Clevis will understand both parameters. Below you can find two examples of PKCS#11 URIs using previous described parameters:
 
@@ -57,7 +57,7 @@ $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri":"pkcs11:model=PKCS%2315%20emulate
 ```
 
 ### Configuration to provide a slot to Clevis
-As it can be seen, a PKCS#11 URI can be somehow difficult to provide. For this reason, Clevis will allow specifing a slot where the device is located:
+As it can be seen, a PKCS#11 URI can be somehow difficult to provide. For this reason, Clevis will allow specifying a slot where the device is located:
 
 ```bash
 $ clevis luks bind -d /dev/sda1 pkcs11 '{"slot":0, "pin_source":"file:/etc/clevis_pkcs11_pin"}'
