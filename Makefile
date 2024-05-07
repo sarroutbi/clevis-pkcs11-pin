@@ -6,12 +6,17 @@ ENCRYPTED_DEVICE?=/dev/nvme0n1p2
 CLEVIS_SLOT?=1
 CLEVIS_LUKS_ASKPASS_PATCH=clevis-luks-askpass.patch
 PIN?=123456
+MD2PDF?=md2pdf
 
 all: check
 	@true
 
 clean:
+	@rm -frv ./*.pdf
 	@true
+
+pdf:
+	@(type $(MD2PDF) && $(MD2PDF) ARCHITECTURE.md ARCHITECTURE.pdf || echo "$(MD2PDF) not found") > /dev/null
 
 install: install_bin install_libexec
 
