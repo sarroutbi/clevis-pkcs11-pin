@@ -1,4 +1,5 @@
 CLI
+initramfs
 NBDE
 openssl
 OAEP
@@ -7,6 +8,7 @@ PCSC
 pkcs
 PKCS
 PKCS#11
+PIV
 PolicyKit
 RSA
 TPM
