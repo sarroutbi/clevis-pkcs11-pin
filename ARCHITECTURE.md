@@ -4,8 +4,8 @@
 
 This document describes the different steps, requirements and procedures for the Clevis PKCS#11 pin implementation. It must be clarified that this document will define two `pin vs PIN` concepts:
 
-* pin: This is pin as part of Clevis. Clevis has different pins, such as Tang, TPM2 or SSS. It is the same concept as a "plugin", but they are named "pins" in this case.
-* PIN: This is PIN as Personal Identification Number. This will be a code used for authentication purposes to access a device, in this case, a PKCS#11 device.
+* <ins>pin</ins>: This is pin as part of Clevis. Clevis has different pins, such as Tang, TPM2 or SSS. It is the same concept as a "plugin", but they are named "pins" in this case.
+* <ins>PIN</ins>: This is PIN as Personal Identification Number. This will be a code used for authentication purposes to access a device, in this case, a PKCS#11 device.
 
 Clevis is part of the NBDE set of tools that allows remote encrypted disks automated unlocking. For more information about this technology, please, check [NBDE (Network-Bound Disk Encryption) Technology][1].
 
@@ -17,7 +17,7 @@ Clevis will perform the role of a PKCS#11 application, as described in the [RFC 
 
 PKCS#11 protocol determines that a PIN must be configured into the hardware device so that the unlocking process is successful. Clevis will allow users to unlock a particular encrypted disk, and will allow the user to not provide the PIN every time unlocking is needed. User will configure the PIN in the device, and will provide a way to notify that PIN to Clevis. There will be two possibilities:
 
-1 - Provide the PIN at Clevis configuration time: In this first case, Clevis will be configured with the PIN value.
+1 - Provide the PIN at Clevis configuration time: In this first case, Clevis will be configured with the PIN value or the PIN location.
 
 2 - Provide the PIN at boot time: In this other case, Clevis will detect PKCS#11 device and will prompt for its PIN.
 In case PIN is wrong, Clevis will prompt for the PIN again. It is the user's responsibility to be aware of the possible lock / brick of the device in case PIN is unknown.
@@ -49,44 +49,37 @@ As first example, a user can provide the information of the device by specifying
 
 ```
 $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;
-serial=0a35ba26b062b9c5;token=clevis"}'
+serial=0a35ba26b062b9c5;token=clevis;id=%02;object=Encryption%20Key"}'
 ```
 
 ### Configuration to provide a slot to Clevis
-As it can be seen in the previous example, a PKCS#11 URI can be somehow difficult to provide.
-For this reason, Clevis will allow specifying the slot where a PKCS#11 device is located:
+Clevis will allow specifying the slot where a PKCS#11 device is located through the parameters provided to the URI:
 
 ```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{"slot": 0}'
+$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:?slot-id=0"}'
 ```
+
+It must be clarified that providing just the slot information will make Clevis to prompt also to select one of the available keys matched on the token in the selected slot, to avoid accidentally encryption with unwanted keys.
+
 
 ### Configuration to bind Clevis to the first PKCS11 device found
-An additional option is to provide Clevis a configuration so that the first PKCS11 device found by Clevis is bound. To do so, two options are available:
+An additional option is to provide Clevis a configuration so that the first PKCS11 device found by Clevis is bound. To do so, an empty URI can be provided as shown below:
 
-1 - Indicate an empty configuration:
-```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{}'
-```
-2 - Indicate an empty PKCS#11 URI:
 ```
 $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri":, "pkcs11:"}'
 ```
-In both cases, Clevis will be responsible for the detection of the device and, if no device is not found, responsible for dumping the corresponding error.
+
+In this case, Clevis will be responsible for the detection of the device and, if no device is found, responsible for dumping the corresponding error.
+
+It must be clarified that providing an empty URI will make Clevis to prompt also to select one of the available keys matched on the token to avoid accidentally encryption with unwanted keys.
 
 ### Configuration to provide a module path to Clevis:
-A module path can be provided to Clevis, so that it uses that module to access a device. This is only required in case the card is not supported by underlying Clevis software (OpenSC). For this reason, the module path field is completely optional. To provide the module location, two options are available:
-
-1 - Provide the "module_path" directly to Clevis configuration:
-
-```
-$ clevis-luks-bind -d /dev/sda1 pkcs11 '{"slot": 0, "module_path": "/mnt/libmypkcs11.so.1"}'
-```
-
-2 - Provide the "module-path" to the "uri" Clevis configuration:
+A module path can be provided to Clevis, so that it uses that module to access a device. This is only required in case the card is not supported by underlying Clevis software (OpenSC). For this reason, the module path field is completely optional. To provide the module location the user can provide the "module-path" to the "uri" Clevis configuration:
 
 ```
 $ clevis-luks-bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;
-serial=0a35ba26b062b9c5;token=clevis?module-path=/mnt/libmypkcs11.so.1"}'
+serial=0a35ba26b062b9c5;token=clevis;id=%02;object=Encryption%20Key?
+module-path=/usr/local/lib64/libmypkcs11.so"}'
 ```
 
 As it happens with the rest of devices, encrypted disks that have been bound to a PKCS#11 device can be checked with `clevis luks list` command:
@@ -96,9 +89,9 @@ $ clevis luks list -d /dev/sda1
 ```
 
 ```
-1: pkcs11 '{"slot": 0, "module_path": "/mnt/libmypkcs11.so.1",
-            "uri": "pkcs11:model=PKCS%2315%20emulated;
-            manufacturer=piv_II;serial=0a35ba26b062b9c5;token=clevis"}'
+1: pkcs11 '{"uri": "pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;
+serial=0a35ba26b062b9c5;token=clevis;id=%02;object=Encryption%20Key?
+module-path=/usr/local/lib64/libmypkcs11.so""}'
 ```
 
 For security reasons, no PIN related information will be shown.
@@ -108,15 +101,15 @@ For security reasons, no PIN related information will be shown.
 An example of an invalid device provided is shown below:
 
 ```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{"slot": 1, "pin_value": "123456"}'
+$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:"}'
 ```
 
 ```
-ERROR: No PKCS11 device detected at slot 1
+ERROR: No PKCS11 devices detected
 ```
 
 ## PIN Handling
-Clevis will allow the user to provide a PIN through its configuration. Clevis parameter to use will be 'pin_value':
+Clevis will allow the user to provide a PIN through its configuration. Clevis parameter to use will be 'pin-value':
 
 ```
 $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:?pin-value=123456"}'
@@ -127,30 +120,21 @@ specifies, explicitly, that no PIN is required
 
 PIN handling will be implemented in different phases:
 
-### Phase 1: pin_value support
+### Phase 1: pin-value support
 
-The first phase will contain support to specify the PIN through 'pin_value':
+The first phase will contain support to specify the PIN through 'pin-value':
 
 ```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{"pin_value": "123456"}'
+$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:?pin-value=123456"}'
 ```
 
-### Phase 2: pin_source support
+### Phase 2: pin-source support
 
-The second phase will contain support to specify the PIN through 'pin_source'.
+The second phase will contain support to specify the PIN through 'pin-source'.
 The unique 'URIs' that will be handled will be the `file:` ones:
 
 ```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{"pin_source": "file:/etc/pkcs11_token_pin"}'
-```
-
-### Phase 3: pin_required support
-
-In some special cases, PIN is not required to unlock a device [PIV certificate slots][3].
-As this is not a typical configuration, Clevis support for `pin_required` will be the latest one being implemented.
-
-```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{"pin_required": false}'
+$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:?pin-source=file:/etc/pkcs11_token_pin"}'
 ```
 
 By default, Clevis will require a PIN, either through its configuration or by prompting it.
@@ -161,9 +145,10 @@ It must be remarked that **Clevis is not responsible for the device configuratio
 
 ### Phase 1: PCSC-LITE and OpenSC
 In this step, Clevis will be implemented on top of `pcsc-lite` and `OpenSC` packages. The first provides a mechanism to launch a daemon that allows PKCS#11 element, while the second provides different tools for access to the device. The reason to use this approach is to take profit of the already implemented [Clevis PKCS#11 pin Proof of Concept][4]
+This first phase is basically a bunch of bash scripts around pkcs11-tool, which makes the boot initramfs larger.
 
 ### Phase 2: pkcs11-provider
-Using pkcs11-provider will allow supporting customers who want to use a different PKCS#11 module than OpenSC. For that cases, OpenSC might not be needed/available, as having two PKCS#11 modules attempting to talk to a single card does not usually go well. If that is the case, using pkcs11-provider would include an additional dependency to Clevis, but it is not a large one. Indeed, it is dynamically loaded into openssl. This will be a complementary mechanism. Clevis will be responsible for providing the configuration mechanisms to use the modules in phase 1 or the ones in phase 2, ideally through [RFC 7512: The PKCS #11 URI Scheme][2].
+Using pkcs11-provider will allow supporting customers who want to use a different PKCS#11 module than OpenSC. For that cases, OpenSC might not be needed/available, as having two PKCS#11 modules attempting to talk to a single card does not usually go well. If that is the case, using pkcs11-provider would include an additional dependency to Clevis, but it is not a large one. Indeed, it is dynamically loaded into openssl. This will be a complementary mechanism. Clevis will be responsible for providing the configuration mechanisms to use the modules in phase 1 or the ones in phase 2, ideally through [RFC 7512: The PKCS #11 URI Scheme][2]. The advantage of using pkcs11-provider would be that it uses self-contained code that will be part of Clevis, making Clevis to have less dependencies, as well as to use a smaller initramfs size.
 
 ## Requirements
 
