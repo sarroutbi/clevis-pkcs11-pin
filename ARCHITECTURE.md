@@ -119,7 +119,7 @@ ERROR: No PKCS11 device detected at slot 1
 Clevis will allow the user to provide a PIN through its configuration. Clevis parameter to use will be 'pin_value':
 
 ```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{"pin_value":"123456"}'
+$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:?pin-value=123456"}'
 ```
 
 In case no information about the PIN is provided, Clevis will ask for the PIN unless the System Administrator
