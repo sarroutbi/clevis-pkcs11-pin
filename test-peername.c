@@ -84,26 +84,10 @@ int main(int argc, char* arvg[]) {
 	// Now we have all the information in peer, something like:
 	// \099226072855ae2d8/cryptsetup/luks-6e38d5e1-7f83-43cc-819a-7416bcbf9f84
 	// NUL random /cryptsetup/ DEVICE
-	// It is necessary to unencrypt by writing the key to that "anonymous" socket
-	a = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (a == -1) {
-            perror("anonymous socket");
-            exit(EXIT_FAILURE);
-        }
-	memset(&anon_addr, 0, sizeof(anon_addr));
-	anon_addr.sun_family = AF_UNIX;
-	strncpy(&(anon_addr.sun_path[1]), &(peer_addr.sun_path[1]), pathlen-1);
-	printf("Lenghts: anon_addr:[%s], peer_addr[%s]\n",
-                anon_addr.sun_path+1, peer_addr.sun_path+1);
-	ret = bind(a, (struct sockaddr *)&anon_addr, sizeof(anon_addr));
-	if (ret == -1) {
-            perror("bind anonymous address");
-            exit(EXIT_FAILURE);
-        }
-
+	// If we need to unencrypt device, pick it from peer information
+	// To return the key, just respond to socket returned by accept
 	// TODO: Make this configurable in program input
 	const char* key = "YOUR_KEY_HERE";
 	send(a, key, strlen(key), 0);
-
 	return EXIT_SUCCESS;
 }
