@@ -27,6 +27,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+const char* DATE = "202406111314";
+
 int main(int argc, char* arvg[]) {
 	int s, a;
 	int ret;
@@ -79,6 +81,7 @@ int main(int argc, char* arvg[]) {
 	char peer[pathlen];
 	memset(peer, 0, pathlen);
 	strncpy(peer, peer_addr.sun_path+1, pathlen-1);
+	printf("VERSION: [%s]\n", DATE);
 	printf("getpeername sun_path(peer): [%s]\n", peer);
 
 	// Now we have all the information in peer, something like:
