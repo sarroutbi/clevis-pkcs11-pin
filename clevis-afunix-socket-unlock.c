@@ -27,7 +27,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-const char* VERSION = "202406120948";
+const char* VERSION = "202406181113";
 const uint16_t MAX_ITERATIONS = 3;
 const uint16_t MAX_KEY = 256;
 const uint16_t MAX_PATH = 1024;
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
     printf("VERSION: [%s]\n", VERSION);
     printf("FILE: [%s]\n", file);
     printf("KEY: [%s]\n", key);
-    printf("ITERATIONS: [%u]\n", iterations);
+    printf("TRY ITERATIONS: [%u]\n", iterations);
 
     memset(&control_addr, 0, sizeof(control_addr));
     control_addr.sun_family = AF_UNIX;
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
 
     len = sizeof(acept_addr);
 
-    while (ic++ < iterations++) {
+    while (ic++ < iterations) {
         a = accept(s, (struct sockaddr *)&acept_addr, &len);
         if (a == -1) {
             perror("accept");
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
         char peer[pathlen];
         memset(peer, 0, pathlen);
         strncpy(peer, peer_addr.sun_path+1, pathlen-1);
-        printf("Pending tries: [%u/%u]\n", iterations, MAX_ITERATIONS);
+        printf("Try: [%u/%u]\n", ic, iterations);
         printf("getpeername sun_path(peer): [%s]\n", peer);
 
         // Now we have all the information in peer, something like:
@@ -117,8 +117,6 @@ int main(int argc, char* argv[]) {
         // NUL random /cryptsetup/ DEVICE
         // If we need to unencrypt device, pick it from peer information
         // To return the key, just respond to socket returned by accept
-        // TODO: Make this configurable in program input
-        const char* key = "wd1uvGgpB_WvDJksxjiug5MnZYBVrB0uHzDswCtP6vu83-nAH6TLuw";
         send(a, key, strlen(key), 0);
         close(a);
     }
