@@ -1,0 +1,16 @@
+#!/bin/bash
+###       If pkcs11 configuration exists, try to start pcscd
+if command -v pcscd; then
+  echo "clevis-pkcs11: starting pcscd if not available ..."
+  echo -e "clevis-pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
+  if ! ps auxf | grep [p]cscd;
+  then
+    echo "clevis-pkcs11: starting pcscd ..."
+    pcscd --disable-polkit
+  fi
+fi
+pkcs11-tool -L
+# PIN=$(systemd-ask-password "Please Insert PKCS11 password:")
+# echo "${PIN}"
+# First of all, connect to socket
+clevis-afunix-socket-unlock -f /run/systemd/clevis-pkcs11.sock -k W6ECwkDcpiJ5OEIfM-uInIt95618aN8sN1tBuREN-VXtazX3oRwumg -i 1
