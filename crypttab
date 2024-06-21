@@ -1,0 +1,2 @@
+#Reference crypttab for unlocking (up to date)
+luks-6e38d5e1-7f83-43cc-819a-7416bcbf9f84 UUID=6e38d5e1-7f83-43cc-819a-7416bcbf9f84 /run/systemd/clevis-pkcs11.sock try-empty-password=true
