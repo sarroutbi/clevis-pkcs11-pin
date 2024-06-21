@@ -21,6 +21,16 @@ set -eo pipefail
 
 PIN_NAME=pkcs11
 
+[ $# -eq 1 ] && [ "$1" == "--summary" ] && exit 2
+
+if [ -t 0 ]; then
+    exec >&2
+    echo
+    echo "Usage: clevis decrypt pkcs11 < JWE > PLAINTEXT"
+    echo
+    exit 2
+fi
+
 on_exit() {
     [ -d "${CLEVIS_PKCS11}" ] || exit 0
     rm -rf "${CLEVIS_PKCS11}"
@@ -79,8 +89,8 @@ device=yubikey
 MODULE=/usr/lib64/pkcs11/opensc-pkcs11.so
 [ "${device}" = "yubikey" ] && MODULE=/usr/lib64/libykcs11.so.2
 
-# XXX: how to handle this?
-PIN=123456
+PIN=$(cat /run/systemd/clevis-pkcs11.pin)
+
 if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN}"-login --test \
                  -p "${PIN}" 2>/dev/null >/dev/null; then
     echo "Invalid PIN" >&2
