@@ -1,0 +1,32 @@
+#!/bin/bash
+. clevis-luks-common-functions
+
+if command -v pcscd; then
+ echo "clevis-pkcs11: starting pcscd if not available ..."
+ echo -e "clevis-pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
+  if ! ps auxf | grep [p]cscd;
+  then
+   echo "clevis-pkcs11: starting pcscd ..."
+    pcscd --disable-polkit
+  fi
+fi
+pkcs11-tool -L
+
+# Let's analyze all entries from /etc/crypttab that contain clevis-pkcs11*sock entries
+# TODO: check for clevis-pkcs11*sock
+cat /etc/crypttab | grep -v "^#" | while read line;
+do
+    pin=$(systemd-ask-password "Please, insert PKCS11 PIN:")
+    uuid=$(echo "${line}" | awk '{print $2}')
+    noUUID=$(echo ${uuid} | sed -e 's@UUID=@@g')
+    # Get key from PKCS11 pin here and feed AF_UNIX socket program
+    echo "${pin}" > /run/systemd/clevis-pkcs11.pin
+    if ! mapped_device=$(clevis_map_device "${uuid}"); then
+        echo "Could not check mapped device for UID:${uid}"
+    fi
+    if ! passphrase="$(clevis_luks_unlock_device ${mapped_device})" || [ -z "${passphrase}" ]; then
+        echo "Could not unlock device:${mapped_device}"
+    fi
+    echo "${passphrase}" > /run/systemd/clevis-pkcs11.${noUUID}.passphrase
+    echo "${pin}" > /run/systemd/clevis-pkcs11.pin
+done
