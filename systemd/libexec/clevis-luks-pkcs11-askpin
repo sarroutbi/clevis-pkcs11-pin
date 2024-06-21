@@ -28,5 +28,5 @@ do
         echo "Could not unlock device:${mapped_device}"
     fi
     echo "${passphrase}" > /run/systemd/clevis-pkcs11.${noUUID}.passphrase
-    echo "${pin}" > /run/systemd/clevis-pkcs11.pin
+    rm -f /run/systemd/clevis-pkcs11.pin
 done
