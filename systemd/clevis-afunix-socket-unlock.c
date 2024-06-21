@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
     socklen_t len;
     socklen_t pathlen;
 
-    while ((opt = getopt(argc, argv, "f:k:i:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:k:i:t:")) != -1) {
         switch (opt) {
         case 'f':
           strncpy(file, optarg, MAX_PATH);
