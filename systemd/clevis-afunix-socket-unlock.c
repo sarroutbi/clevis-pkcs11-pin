@@ -27,15 +27,20 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-const char* VERSION = "202406181113";
+const char* VERSION = "202406211228";
 const uint16_t MAX_ITERATIONS = 3;
 const uint16_t MAX_KEY = 256;
 const uint16_t MAX_PATH = 1024;
+// Timer (in seconds) to wait before sending the key ...
+// this is required as a proof of concept that
+// unlock can be performed after a particular time
+// (which is the one to spend for PKCS11 pin prompting)
+const uint16_t TIMER = 10;
 
 int main(int argc, char* argv[]) {
     int s, a, opt, ret;
-    uint32_t iterations = MAX_ITERATIONS;
-    uint32_t ic = 0;
+    uint32_t iterations = MAX_ITERATIONS, timeout = TIMER;
+    uint32_t ic, time = 0;
     char file[MAX_PATH];
     char key[MAX_KEY];
     struct sockaddr_un control_addr, acept_addr, peer_addr, anon_addr;
@@ -53,8 +58,11 @@ int main(int argc, char* argv[]) {
         case 'i':
           iterations = strtoul(optarg, 0, 10);
           break;
-        default: /* '?' */
-          fprintf(stderr, "Usage: %s -f file -k key [-i iterations, 3 by default]\n",
+        case 't':
+          timeout = strtoul(optarg, 0, 10);
+          break;
+        default:
+          fprintf(stderr, "Usage: %s -f file -k key [-i iterations, 3 by default] [ -t timeout, 10s by default]\n",
                   argv[0]);
           exit(EXIT_FAILURE);
         }
@@ -63,6 +71,7 @@ int main(int argc, char* argv[]) {
     printf("FILE: [%s]\n", file);
     printf("KEY: [%s]\n", key);
     printf("TRY ITERATIONS: [%u]\n", iterations);
+    printf("TIMEOUT: [%u] seconds\n", timeout);
 
     memset(&control_addr, 0, sizeof(control_addr));
     control_addr.sun_family = AF_UNIX;
@@ -89,7 +98,13 @@ int main(int argc, char* argv[]) {
 
     len = sizeof(acept_addr);
 
-    while (ic++ < iterations) {
+    while (ic < iterations) {
+
+        if (time++ < timeout) {
+          sleep(1);
+          printf("Time elapsed: [%u/%u] seconds\n", time, timeout);
+          continue;
+        }
         a = accept(s, (struct sockaddr *)&acept_addr, &len);
         if (a == -1) {
             perror("accept");
@@ -117,7 +132,10 @@ int main(int argc, char* argv[]) {
         // NUL random /cryptsetup/ DEVICE
         // If we need to unencrypt device, pick it from peer information
         // To return the key, just respond to socket returned by accept
+        // TODO: Quit next trace (it is for debugging purposes)
+        printf("Sending key: [%s]\n", key);
         send(a, key, strlen(key), 0);
+        ic++;
         close(a);
     }
     return EXIT_SUCCESS;
