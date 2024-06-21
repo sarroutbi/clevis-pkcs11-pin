@@ -27,7 +27,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-const char* VERSION = "202406211228";
+#ifdef GIT_VERSION
+const char* VERSION = GIT_VERSION;
+#else
+const char* VERSION = "v0.0.0";
+#endif
+
 const uint16_t MAX_ITERATIONS = 3;
 const uint16_t MAX_KEY = 256;
 const uint16_t MAX_PATH = 1024;
