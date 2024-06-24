@@ -1,4 +1,4 @@
 #!/bin/bash
 /usr/libexec/clevis-luks-pkcs11-askpin &
 # TODO: Change this to provide a socket where previous command will send the key (instead of manual setting)
-clevis-afunix-socket-unlock -f /run/systemd/clevis-pkcs11.sock -k W6ECwkDcpiJ5OEIfM-uInIt95618aN8sN1tBuREN-VXtazX3oRwumg -i 1 -t 15
+clevis-afunix-socket-unlock -f /run/systemd/clevis-pkcs11.sock -k W6ECwkDcpiJ5OEIfM-uInIt95618aN8sN1tBuREN-VXtazX3oRwumg -i 1 -t 20
