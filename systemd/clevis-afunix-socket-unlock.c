@@ -43,11 +43,6 @@ const uint16_t MAX_ITERATIONS = 3;
 const uint16_t MAX_PATH = 1024;
 const uint16_t MAX_CONTROL_MSG = 1024;
 
-// Timer (in seconds) to wait before sending the key ...
-// this is required as a proof of concept that
-// unlock can be performed after a particular time
-// (which is the one to spend for PKCS11 pin prompting)
-const uint16_t TIMER = 10;
 // Time to wait before trying to write key
 const uint16_t START_DELAY = 0;
 
@@ -57,7 +52,8 @@ typedef struct {
 } key_entry_t;
 key_entry_t keys[MAX_ENTRIES];
 uint16_t entry_counter = 0;
-uint8_t  thread_loop = 1;
+uint8_t thread_loop = 1;
+uint8_t control_thread_info = 0;
 pthread_mutex_t mutex;
 
 int
@@ -145,6 +141,8 @@ void* control_thread(void *targ) {
             } else {
                 printf("Adding key:%s\n", t);
                 insert_key(t);
+                // As long as some key is inserted, we store it in the control_thread_info variable
+                control_thread_info = 1;
             }
             t = strtok(NULL, ",");
         }
@@ -168,29 +166,31 @@ int main(int argc, char* argv[]) {
     socklen_t len;
     socklen_t pathlen;
 
-    while ((opt = getopt(argc, argv, "c:f:k:i:s:t:h:")) != -1) {
+    while ((opt = getopt(argc, argv, "c:f:k:i:s:t:h")) != -1) {
+        int ret_code = EXIT_FAILURE;
         switch (opt) {
         case 'c':
-          strncpy(sock_control_file, optarg, MAX_PATH);
-          break;
+            strncpy(sock_control_file, optarg, MAX_PATH);
+            break;
         case 'f':
-          strncpy(sock_file, optarg, MAX_PATH);
-          break;
+            strncpy(sock_file, optarg, MAX_PATH);
+            break;
         case 'k':
-          strncpy(key, optarg, MAX_KEY);
-          break;
+            strncpy(key, optarg, MAX_KEY);
+            break;
         case 't':
-          iterations = strtoul(optarg, 0, 10);
-          break;
+            iterations = strtoul(optarg, 0, 10);
+            break;
         case 's':
-          startdelay = strtoul(optarg, 0, 10);
-          break;
+            startdelay = strtoul(optarg, 0, 10);
+            break;
         case 'h':
+            ret_code = EXIT_SUCCESS;
         default:
-          fprintf(stderr, "Usage: %s -f socket_file [-c control_socket] [-k key] \
-                           [-t iterations, 3 by default] [-s start delay, 0s by default]\n",
-                  argv[0]);
-          exit(EXIT_FAILURE);
+            printf("Usage: %s -f socket_file [-c control_socket] [-k key] "\
+                   "[-t iterations, 3 by default] "\
+                   "[-s start delay, 0s by default]\n", argv[0]);
+            exit(ret_code);
         }
     }
     printf("VERSION: [%s]\n", VERSION);
@@ -237,7 +237,7 @@ int main(int argc, char* argv[]) {
     len = sizeof(accept_addr);
 
     while (ic < iterations) {
-        if (time++ < startdelay) {
+        if (time++ < startdelay && !control_thread_info) {
             sleep(1);
             printf("Start time elapsed: [%u/%u] seconds\n", time, startdelay);
             continue;
@@ -275,15 +275,11 @@ int main(int argc, char* argv[]) {
         // NUL random /cryptsetup/ DEVICE
         // If we need to unencrypt device, pick it from peer information
         // To return the key, just respond to socket returned by accept
-        // TODO: Quit next trace (it is for debugging purposes)
         if(strlen(key)) {
-            printf("Sending key introduced as parameter: [%s]\n", key);
             send(a, key, strlen(key), 0);
         } else {
             const char* entry_key;
             if(entry_key = get_key(unlocking_device)) {
-                printf("Device:[%s]; Sending key received by control socket: [%s]\n",
-                       unlocking_device, entry_key);
                 send(a, entry_key, strlen(entry_key), 0);
             } else {
                 printf("Device not found: [%s]\n", unlocking_device);
