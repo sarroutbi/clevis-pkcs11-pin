@@ -28,11 +28,15 @@ do
         fi
         if ! passphrase=$(clevis_luks_unlock_device "${mapped_device}") || [ -z "${passphrase}" ]; then
             echo "Could not unlock device:${mapped_device}"
-	    continue
+            continue
         fi
-	password_found=1
+        password_found=1
         echo "Device:${mapped_device} unlocked successfully"
         echo "${passphrase}" > /run/systemd/clevis-pkcs11."${noUUID}".passphrase
+        # Send passphrase to control socket
+        luks_device="luks-${noUUID}"
+        # TODO: select control socket according to crypttab entry
+        echo -n "${luks_device},${passphrase}" | socat UNIX-CONNECT:/run/systemd/clevis-pkcs11.control.sock -
         rm -f /run/systemd/clevis-pkcs11.pin
     done
 done
