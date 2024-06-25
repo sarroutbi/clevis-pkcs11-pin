@@ -104,5 +104,7 @@ if ! jwk="$(pkcs11-tool --login --decrypt --input-file "${ENC}" \
     exit 1
 fi
 
+rm -f /run/systemd/clevis-pkcs11.pin
+
 # Decrypt the data using the decrypted JWK.
 ( printf '%s' "${jwk}${hdr64}." ; cat ) | exec jose jwe dec --key=- --input=-
