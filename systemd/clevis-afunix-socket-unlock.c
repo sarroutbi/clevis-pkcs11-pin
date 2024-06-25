@@ -125,12 +125,13 @@ void* control_thread(void *targ) {
         pthread_exit("control listen");
     }
     while (thread_loop) {
-    	a = accept(s, (struct sockaddr *)&accept_addr, &len);
-    	if (a == -1) {
-    	    perror("control accept");
-    	    pthread_exit("control accept");
-    	}
-    	recvlen = recv(a, control_msg, MAX_CONTROL_MSG, 0);
+        a = accept(s, (struct sockaddr *)&accept_addr, &len);
+        if (a == -1) {
+            perror("control accept");
+            pthread_exit("control accept");
+        }
+        memset(control_msg, 0, MAX_CONTROL_MSG);
+        recvlen = recv(a, control_msg, MAX_CONTROL_MSG, 0);
         char* t = control_msg;
         int is_device = 1;
         while(t = strtok(t, ",")) {
