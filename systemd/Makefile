@@ -1,6 +1,7 @@
 VERSION=v0.0.1
 EXE_FILE?=clevis-afunix-socket-unlock
 GIT_VERSION=$(shell git rev-parse --short HEAD)
+CC=gcc
 
 .PHONY: all clean test
 
