@@ -56,7 +56,7 @@ uint8_t thread_loop = 1;
 uint8_t control_thread_info = 0;
 pthread_mutex_t mutex;
 
-int
+static void
 get_control_socket_name(const char* file_sock, char* control_sock, uint32_t control_sock_len) {
     char *p = strstr(file_sock, ".sock");
     size_t prefix_length = strlen(file_sock) - strlen(p);
@@ -86,7 +86,7 @@ static void insert_key(const char* key) {
 }
 
 
-const char* get_key(const char* dev) {
+static const char* get_key(const char* dev) {
     for(int e = 0; e < entry_counter; e++) {
         pthread_mutex_lock(&mutex);
         if(0 == strcmp(keys[e].dev, dev)) {
@@ -98,10 +98,10 @@ const char* get_key(const char* dev) {
     return NULL;
 }
 
-void* control_thread(void *targ) {
+static void* control_thread(void *targ) {
     // Create a socket to listen on control socket
     struct sockaddr_un control_addr, accept_addr;
-    int s, a, ret, recvlen;
+    int s, a, ret;
     char control_msg[MAX_CONTROL_MSG];
     const char* control_sock = (const char*)targ;
     socklen_t len;
@@ -131,10 +131,10 @@ void* control_thread(void *targ) {
             pthread_exit("control accept");
         }
         memset(control_msg, 0, MAX_CONTROL_MSG);
-        recvlen = recv(a, control_msg, MAX_CONTROL_MSG, 0);
+        recv(a, control_msg, MAX_CONTROL_MSG, 0);
         char* t = control_msg;
         int is_device = 1;
-        while(t = strtok(t, ",")) {
+        while((t = strtok(t, ","))) {
             if (is_device) {
                 printf("Adding device:%s\n", t);
                 insert_device(t);
@@ -148,6 +148,7 @@ void* control_thread(void *targ) {
             t = strtok(NULL, ",");
         }
     }
+    return NULL;
 }
 
 int main(int argc, char* argv[]) {
@@ -163,7 +164,7 @@ int main(int argc, char* argv[]) {
     char key[MAX_KEY];
     memset(sock_control_file, 0, MAX_PATH);
     memset(key, 0, MAX_KEY);
-    struct sockaddr_un sock_addr, accept_addr, peer_addr, anon_addr;
+    struct sockaddr_un sock_addr, accept_addr, peer_addr;
     socklen_t len;
     socklen_t pathlen;
 
@@ -187,6 +188,7 @@ int main(int argc, char* argv[]) {
             break;
         case 'h':
             ret_code = EXIT_SUCCESS;
+            __attribute__ ((fallthrough));
         default:
             printf("Usage: %s -f socket_file [-c control_socket] [-k key] "\
                    "[-t iterations, 3 by default] "\
@@ -264,7 +266,7 @@ int main(int argc, char* argv[]) {
         printf("getpeername sun_path(peer): [%s]\n", peer);
         char* t = peer;
         const char* unlocking_device;
-        while(t = strtok(t, "/")) {
+        while((t = strtok(t, "/"))) {
             if(t) {
                 unlocking_device = t;
             }
@@ -280,7 +282,7 @@ int main(int argc, char* argv[]) {
             send(a, key, strlen(key), 0);
         } else {
             const char* entry_key;
-            if(entry_key = get_key(unlocking_device)) {
+            if((entry_key = get_key(unlocking_device))) {
                 send(a, entry_key, strlen(entry_key), 0);
             } else {
                 printf("Device not found: [%s]\n", unlocking_device);
