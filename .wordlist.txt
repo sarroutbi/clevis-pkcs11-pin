@@ -1,5 +1,15 @@
+afunix
+askpass
+clevis
 CLI
+cryptsetup
+crypttab
+github
+http
+https
 initramfs
+keyfile
+luks
 NBDE
 openssl
 OAEP
@@ -11,6 +21,8 @@ PKCS#11
 PIV
 PolicyKit
 RSA
+sarroutbi
+systemd
 TPM
 URI
 URIs
