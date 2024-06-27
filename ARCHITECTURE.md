@@ -148,7 +148,47 @@ In this step, Clevis will be implemented on top of `pcsc-lite` and `OpenSC` pack
 This first phase is basically a bunch of bash scripts around pkcs11-tool, which makes the boot initramfs larger.
 
 ### Phase 2: pkcs11-provider
-Using pkcs11-provider will allow supporting customers who want to use a different PKCS#11 module than OpenSC. For that cases, OpenSC might not be needed/available, as having two PKCS#11 modules attempting to talk to a single card does not usually go well. If that is the case, using pkcs11-provider would include an additional dependency to Clevis, but it is not a large one. Indeed, it is dynamically loaded into openssl. This will be a complementary mechanism. Clevis will be responsible for providing the configuration mechanisms to use the modules in phase 1 or the ones in phase 2, ideally through [RFC 7512: The PKCS #11 URI Scheme][2]. The advantage of using pkcs11-provider would be that it uses self-contained code that will be part of Clevis, making Clevis to have less dependencies, as well as to use a smaller initramfs size.
+Using pkcs11-provider will allow supporting customers who want to use a different PKCS#11 module than OpenSC. For that cases, OpenSC might not be needed/available, as having two PKCS#11 modules attempting to talk to a single card does not usually go well. If that is the case, using pkcs11-provider would include an additional dependency to Clevis, but it is not a large one. Indeed, it is dynamically loaded into openssl.
+
+This will be a complementary mechanism. Clevis will be responsible for providing the configuration mechanisms to use the modules in phase 1 or the ones in phase 2, ideally through [RFC 7512: The PKCS #11 URI Scheme][2]. The advantage of using pkcs11-provider would be that it uses self-contained code that will be part of Clevis, making Clevis to have less dependencies, as well as to use a smaller initramfs size.
+
+## Integration with systemd
+
+Initially, including PKCS11 Clevis pin involves some basic requirements:
+
+* The unlock process should use multiple factors (Logical AND).
+* The unlock process should not involve a passphrase.
+* One of the factors should be external to the computer.
+
+However, it must be remarked that the main usage of Clevis, up to date, is based on letting systemd-cryptsetup to unlock disks as usual (in the same way as if Clevis is not configured), so that it asks for the passphrase.
+
+When Clevis is configured, a specific Clevis unit (clevis-luks-askpass.path) checks for directory where systemd-cryptsetup is asking for information being prompted (/run/systemd/ask-password) and sends the unlocking passphrase through a socket created under that directory.
+
+This is done because systemd-cryptsetup uses information in /etc/crypttab and, as no special keyfile information is found on that file, it ends up asking for the passphrase through the command line.
+
+However, if the unlock process should not involve a passphrase, the current mechanism does not work. So ... is there an alternative?
+
+The answer is yes, there is an alternative. An AF_UNIX socket file can be specified in /etc/crypttab, so that systemd-cryptsetup checks for it and, if it exists, it won't ask the password through console, as it is done normally.
+
+So ... how should be the password provided provided to systemd-cryptsetup? Well, the process is described here:
+[AF\_UNIX Key Files](https://www.freedesktop.org/software/systemd/man/latest/crypttab.html#AF_UNIX%20Key%20Files)
+
+At high level, when an encrypted disk unlocking with no passphrase is required, next steps will be needed:
+
+<ul>
+    <li>1 - Configure the device to use PKCS11 configuration</li>
+    <li>2 - Modify crypttab so that systemd-cryptsetup does not ask for a passphrase through the console</li>
+    <li>3 - Implement a specific clevis-pkcs11 unit that:
+        <ul>
+           <li>3.1 - Is started before systemd-cryptsetup</li>
+           <li>3.2 - Reads, from /etc/crypttab, which devices need "AF_UNIX socket" unlocking</li>
+           <li>3.3 - Obtain the passphrases for each of the devices</li>
+           <li>3.4 - Create an AF_UNIX socket and, when systemd-cryptsetup asks for unlocking, send the passphrase to unlock the disk. A small example file that performs this operation is [available here](https://github.com/sarroutbi/clevis-pkcs11-pin/blob/main/clevis-afunix-socket-unlock.c)</li>
+        </ul>
+    </li>
+</ul>
+
+To summarize: for clevis PKCS11 device unlocking without password prompt, /etc/crypttab will need to be configured with a specific socket file (name it clevis-pkcs11.sock). Clevis will provide a specific systemd unit file that parses which devices are configured to use it, so that it unlocks them with no passphrase mechanism involved, but asking for Clevis PKCS11 pin, if necessary, and performing unlock consequently.
 
 ## Requirements
 
