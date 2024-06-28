@@ -11,7 +11,9 @@ if command -v pcscd; then
     fi
 fi
 
+pkcs11-tool -L
 if ! pkcs11_device=$(pkcs11-tool -L | grep "Slot" | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g'); then
+    echo "No PKCS11 device detected"
     exit 1
 fi
 

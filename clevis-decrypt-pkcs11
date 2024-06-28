@@ -20,6 +20,7 @@ set -eo pipefail
 #
 
 PIN_NAME=pkcs11
+PIN_FILE="/run/systemd/clevis-pkcs11.pin"
 
 [ $# -eq 1 ] && [ "$1" == "--summary" ] && exit 2
 
@@ -89,7 +90,7 @@ device=yubikey
 MODULE=/usr/lib64/pkcs11/opensc-pkcs11.so
 [ "${device}" = "yubikey" ] && MODULE=/usr/lib64/libykcs11.so.2
 
-PIN=$(cat /run/systemd/clevis-pkcs11.pin)
+PIN=$(cat "${PIN_FILE}")
 
 if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN}"-login --test \
                  -p "${PIN}" 2>/dev/null >/dev/null; then
@@ -103,6 +104,8 @@ if ! jwk="$(pkcs11-tool --login --decrypt --input-file "${ENC}" \
     echo "Unable to decrypt the JWK" >&2
     exit 1
 fi
+
+rm -rf "${PIN_FILE}"
 
 # Decrypt the data using the decrypted JWK.
 ( printf '%s' "${jwk}${hdr64}." ; cat ) | exec jose jwe dec --key=- --input=-
