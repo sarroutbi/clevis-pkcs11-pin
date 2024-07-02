@@ -22,6 +22,7 @@ PIN_NAME=pkcs11
 PIN_FILE="/run/systemd/clevis-pkcs11.pin"
 URI_EXPECTED_FORMAT="pkcs11:"
 DEFAULT_MODULE_PATH=/usr/lib64/pkcs11/opensc-pkcs11.so
+. clevis-pkcs11-common
 
 [ $# -eq 1 ] && [ "$1" == "--summary" ] && exit 2
 
@@ -36,20 +37,6 @@ fi
 on_exit() {
     [ -d "${CLEVIS_PKCS11}" ] || exit 0
     rm -rf "${CLEVIS_PKCS11}"
-}
-
-valid_pkcs11_uri() {
-    echo "$1" | grep -E "^${URI_EXPECTED_FORMAT}" >/dev/null 2>&1 || return 1
-}
-
-get_module_path_from_uri() {
-    echo "$1" | grep -E "module-path=" >/dev/null 2>&1 || return 1
-    echo "$1" | awk -F 'module-path=' '{print $2}' | awk -F ";" '{print $1}' | awk -F "?" '{print $1}'
-}
-
-get_pin_value_from_uri() {
-    echo "$1" | grep -E "pin-value=" >/dev/null 2>&1 || return 1
-    echo "$1" | awk -F 'pin-value=' '{print $2}' | awk -F ";" '{print $1}'
 }
 
 unset CLEVIS_PKCS11
@@ -79,14 +66,14 @@ if ! uri="$(jose fmt -j- -Og clevis -g "${PIN_NAME}" -g uri -Su- <<< "${hdr}")";
     exit 1
 fi
 
-if ! valid_pkcs11_uri "${uri}"; then
+if ! clevis_valid_pkcs11_uri "${uri}"; then
     echo "PKCS#11 URI with invalid format:[${uri}]" >&2
     echo "PKCS#11 URI expected format:[${URI_EXPECTED_FORMAT}]" >&2
     exit 1
 fi
 
 module_path=""
-if ! module_path="$(get_module_path_from_uri ${uri})"; then
+if ! module_path="$(clevis_get_module_path_from_uri ${uri})"; then
      module_path="${DEFAULT_MODULE_PATH}"
 fi
 
@@ -113,7 +100,7 @@ fi
 
 DEC="${CLEVIS_PKCS11}/dec"
 PIN_value=""
-if ! PIN_value="$(get_pin_value_from_uri ${uri})"; then
+if ! PIN_value="$(clevis_get_pin_value_from_uri ${uri})"; then
     PIN_value=$(cat "${PIN_FILE}" 2>/dev/null || :)
 fi
 
