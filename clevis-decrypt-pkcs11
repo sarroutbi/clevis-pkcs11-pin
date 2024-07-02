@@ -18,10 +18,10 @@ set -eo pipefail
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 PIN_NAME=pkcs11
 PIN_FILE="/run/systemd/clevis-pkcs11.pin"
 URI_EXPECTED_FORMAT="pkcs11:"
+DEFAULT_MODULE_PATH=/usr/lib64/pkcs11/opensc-pkcs11.so
 
 [ $# -eq 1 ] && [ "$1" == "--summary" ] && exit 2
 
@@ -40,6 +40,11 @@ on_exit() {
 
 valid_pkcs11_uri() {
     echo "$1" | grep -E "^${URI_EXPECTED_FORMAT}" >/dev/null 2>&1 || return 1
+}
+
+get_module_path_from_uri() {
+    echo "$1" | grep -E "module-path=" >/dev/null 2>&1 || return 1
+    echo "$1" | awk -F 'module-path=' '{print $2}' | awk -F ";" '{print $1}'
 }
 
 unset CLEVIS_PKCS11
@@ -75,6 +80,11 @@ if ! valid_pkcs11_uri "${uri}"; then
     exit 1
 fi
 
+module_path=""
+if ! module_path="$(get_module_path_from_uri ${uri})"; then
+     module_path="${DEFAULT_MODULE_PATH}"
+fi
+
 # Check if key parameter is present.
 if ! enc_jwk="$(jose fmt --json="${hdr}" --get clevis --get "${PIN_NAME}" \
                 --get key --unquote=- 2>/dev/null)" \
@@ -96,17 +106,7 @@ if ! printf '%s' "${enc_jwk}" | jose b64 dec -i- > "${ENC}" 2>/dev/null; then
     exit 1
 fi
 
-
 DEC="${CLEVIS_PKCS11}/dec"
-# XXX: how to handle this? (2)
-# Perhaps attempt to identify the device when encrypting, with say
-# a "type" attribute in the configuration? So that we can then use
-# the appropriate PKCS#11 module here. In any case, we would need
-# to provide the module from yubico to use a yubikey.
-device=yubikey
-MODULE=/usr/lib64/pkcs11/opensc-pkcs11.so
-[ "${device}" = "yubikey" ] && MODULE=/usr/lib64/libykcs11.so.2
-
 PIN=$(cat "${PIN_FILE}" 2>/dev/null || :)
 
 if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN}"-login --test \
@@ -115,8 +115,8 @@ if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN}"-login --test \
     exit 1
 fi
 
-if ! jwk="$(pkcs11-tool --login --decrypt --input-file "${ENC}" \
-            -p "${PIN}" --module "${MODULE}" 2>/dev/null)" \
+if ! jwk="$(pkcs11-tool --login --decrypt --input-file ${ENC} \
+            -p ${PIN} --module ${module_path} 2>/dev/null)" \
             || [ -z "${jwk}" ]; then
     echo "Unable to decrypt the JWK" >&2
     exit 1
