@@ -21,6 +21,7 @@ set -eo pipefail
 
 PIN_NAME=pkcs11
 PIN_FILE="/run/systemd/clevis-pkcs11.pin"
+URI_EXPECTED_FORMAT="pkcs11:"
 
 [ $# -eq 1 ] && [ "$1" == "--summary" ] && exit 2
 
@@ -36,6 +37,11 @@ on_exit() {
     [ -d "${CLEVIS_PKCS11}" ] || exit 0
     rm -rf "${CLEVIS_PKCS11}"
 }
+
+valid_pkcs11_uri() {
+    echo "$1" | grep -E "^${URI_EXPECTED_FORMAT}" >/dev/null 2>&1 || return 1
+}
+
 unset CLEVIS_PKCS11
 
 read -r -d . hdr64
@@ -55,6 +61,17 @@ if ! pin="$(jose fmt --json="${hdr}" --get clevis --get pin \
 fi
 if [ "${pin}" != "${PIN_NAME}" ]; then
     echo "JWE pin mismatch: found: ${pin}; expected: ${PIN_NAME}" >&2
+    exit 1
+fi
+
+if ! uri="$(jose fmt -j- -Og clevis -g "${PIN_NAME}" -g uri -Su- <<< "${hdr}")"; then
+    echo "URI missing required 'clevis.pkcs11.uri' header parameter!" >&2
+    exit 1
+fi
+
+if ! valid_pkcs11_uri "${uri}"; then
+    echo "PKCS#11 URI with invalid format:[${uri}]" >&2
+    echo "PKCS#11 URI expected format:[${URI_EXPECTED_FORMAT}]" >&2
     exit 1
 fi
 
@@ -90,7 +107,7 @@ device=yubikey
 MODULE=/usr/lib64/pkcs11/opensc-pkcs11.so
 [ "${device}" = "yubikey" ] && MODULE=/usr/lib64/libykcs11.so.2
 
-PIN=$(cat "${PIN_FILE}")
+PIN=$(cat "${PIN_FILE}" 2>/dev/null || :)
 
 if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN}"-login --test \
                  -p "${PIN}" 2>/dev/null >/dev/null; then
@@ -105,7 +122,7 @@ if ! jwk="$(pkcs11-tool --login --decrypt --input-file "${ENC}" \
     exit 1
 fi
 
-rm -rf "${PIN_FILE}"
+rm -rf "${PIN_FILE}" 2>/dev/null || :
 
 # Decrypt the data using the decrypted JWK.
 ( printf '%s' "${jwk}${hdr64}." ; cat ) | exec jose jwe dec --key=- --input=-
