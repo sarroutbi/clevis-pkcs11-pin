@@ -74,7 +74,14 @@ fi
 
 # Now let's encrypt it with the device public key.
 PKEY="${CLEVIS_PKCS11}/pubkey"
-if ! pkcs15-tool --read-public-key 03 2>/dev/null > "${PKEY}"; then
+if ! id=$(pkcs11-tool -O 2>/dev/null | grep -i 'Public' -A10 2>/dev/null | grep 'ID:' \
+	  | head -1 | awk -F 'ID:' '{print $2}' | tr -d ' '); then
+    echo "Unable to obtain public key ID from PKCS#11 device" >&2
+    exit 1
+fi
+
+if ! pkcs11-tool --read-object --type pubkey --id "${id}" 2>/dev/null \
+   > "${PKEY}"; then
     echo "Unable to obtain a public key from PKCS#11 device" >&2
     exit 1
 fi
