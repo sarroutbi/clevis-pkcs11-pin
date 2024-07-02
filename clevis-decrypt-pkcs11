@@ -44,7 +44,12 @@ valid_pkcs11_uri() {
 
 get_module_path_from_uri() {
     echo "$1" | grep -E "module-path=" >/dev/null 2>&1 || return 1
-    echo "$1" | awk -F 'module-path=' '{print $2}' | awk -F ";" '{print $1}'
+    echo "$1" | awk -F 'module-path=' '{print $2}' | awk -F ";" '{print $1}' | awk -F "?" '{print $1}'
+}
+
+get_pin_value_from_uri() {
+    echo "$1" | grep -E "pin-value=" >/dev/null 2>&1 || return 1
+    echo "$1" | awk -F 'pin-value=' '{print $2}' | awk -F ";" '{print $1}'
 }
 
 unset CLEVIS_PKCS11
@@ -107,16 +112,19 @@ if ! printf '%s' "${enc_jwk}" | jose b64 dec -i- > "${ENC}" 2>/dev/null; then
 fi
 
 DEC="${CLEVIS_PKCS11}/dec"
-PIN=$(cat "${PIN_FILE}" 2>/dev/null || :)
+PIN_value=""
+if ! PIN_value="$(get_pin_value_from_uri ${uri})"; then
+    PIN_value=$(cat "${PIN_FILE}" 2>/dev/null || :)
+fi
 
-if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN}"-login --test \
-                 -p "${PIN}" 2>/dev/null >/dev/null; then
+if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN_value}"-login --test \
+                 -p "${PIN_value}" 2>/dev/null >/dev/null; then
     echo "Invalid PIN" >&2
     exit 1
 fi
 
 if ! jwk="$(pkcs11-tool --login --decrypt --input-file ${ENC} \
-            -p ${PIN} --module ${module_path} 2>/dev/null)" \
+            -p ${PIN_value} --module ${module_path} 2>/dev/null)" \
             || [ -z "${jwk}" ]; then
     echo "Unable to decrypt the JWK" >&2
     exit 1
