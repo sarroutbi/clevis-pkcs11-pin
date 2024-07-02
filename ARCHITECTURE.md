@@ -91,7 +91,7 @@ $ clevis luks list -d /dev/sda1
 ```
 1: pkcs11 '{"uri": "pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;
 serial=0a35ba26b062b9c5;token=clevis;id=%02;object=Encryption%20Key?
-module-path=/usr/local/lib64/libmypkcs11.so""}'
+module-path=/usr/local/lib64/libmypkcs11.so"}'
 ```
 
 For security reasons, no PIN related information will be shown.
