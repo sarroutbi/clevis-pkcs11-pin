@@ -3,6 +3,22 @@
 
 pkcs11_device=""
 
+get_pkcs11_error() {
+    if journalctl -u clevis-luks-pkcs11-askpass.service -b 0 | tail -3 \
+      | egrep -E "A TPM2 device.{1,}needed" >/dev/null 2>&1;
+    then
+        echo "ERROR:TPM2 device not found. "
+        return 1
+    elif journalctl -u clevis-luks-pkcs11-askpass.service -b 0 | tail -3 \
+      | grep "Invalid PIN" >/dev/null 2>&1;
+    then
+        echo "ERROR:Invalid PIN. "
+    else
+        echo "ERROR:Unknown error. "
+    fi
+    return 0
+}
+
 if command -v pcscd; then
     echo "clevis-pkcs11: starting pcscd if not available ..."
     echo -e "clevis-pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
@@ -20,7 +36,7 @@ if ! pkcs11_device=$(pkcs11-tool -L | grep "Slot" | head -1 | awk -F ":" '{print
 fi
 
 while [ -z "${pkcs11_device}" ]; do
-    option=$(systemd-ask-password --echo=yes "Detected empty PKCS#11 device, continue PKCS#11 detection? [yY/nN]")
+    option=$(systemd-ask-password --echo "Detected an empty PKCS#11 device, continue PKCS#11 detection? [yY/nN]")
     if [ "${option}" == "N" ] || [ "${option}" == "n" ] ; then
         echo "Won't continue PKCS11 device detection"
         exit 1
@@ -35,10 +51,11 @@ do
     if echo "${line}" | grep -E "clevis-pkcs11.sock" 1>/dev/null;
     then
         password_found=0
+        msg=""
         while [ ${password_found} -ne 1 ]; do
             uuid=$(echo "${line}" | awk '{print $2}')
             noUUID=$(echo "${uuid}" | sed -e 's@UUID=@@g')
-            pin=$(systemd-ask-password "Please, insert PIN for ${pkcs11_device} (${uuid})")
+            pin=$(systemd-ask-password "${msg}Please, insert PIN for ${pkcs11_device} (${uuid}):")
             # Get key from PKCS11 pin here and feed AF_UNIX socket program
             echo "${pin}" > /run/systemd/clevis-pkcs11.pin
             if ! mapped_device=$(clevis_map_device "${uuid}"); then
@@ -46,6 +63,10 @@ do
             fi
             if ! passphrase=$(clevis_luks_unlock_device "${mapped_device}") || [ -z "${passphrase}" ]; then
                 echo "Could not unlock device:${mapped_device}"
+                if ! msg="$(get_pkcs11_error)"; then
+                    echo "Detected FATAL ${msg}"
+                    exit 1
+                fi
                 continue
             fi
             password_found=1
