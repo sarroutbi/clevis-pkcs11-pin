@@ -4,6 +4,7 @@ clevis
 CLI
 cryptsetup
 crypttab
+decrypt
 github
 http
 https

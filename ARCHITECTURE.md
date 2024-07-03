@@ -190,6 +190,65 @@ At high level, when an encrypted disk unlocking with no passphrase is required, 
 
 To summarize: for clevis PKCS11 device unlocking without password prompt, /etc/crypttab will need to be configured with a specific socket file (name it clevis-pkcs11.sock). Clevis will provide a specific systemd unit file that parses which devices are configured to use it, so that it unlocks them with no passphrase mechanism involved, but asking for Clevis PKCS11 pin, if necessary, and performing unlock consequently.
 
+## Installation and configuration
+
+At the initial stage, there is a branch in this feature [main developer's Clevis personal fork][6]. To try installation and configuration of the feature before it is merged in Clevis upstream repository, next steps must be followed:
+
+1 - Clone appropriate branch:
+
+```
+$ git clone https://github.com/sarroutbi/clevis -b 202405281240-clevis-pkcs11
+```
+
+2 - Once cloned, compile and install through meson:
+
+```
+$ cd clevis
+$ rm -fr build; mkdir build; pushd build; meson setup --prefix=/usr --wipe ..; meson compile -v; sudo meson install; popd
+```
+
+3 - The PKCS11 device must be accessible by “pkcs11-tool”:
+
+```
+$ pkcs11-tool -L
+pkcs11-tool -L
+Available slots:
+Slot 0 (0x0): Yubico YubiKey OTP+CCID 00 00
+  token label        : clevis
+  ...
+  uri                : pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;serial=42facd1f749ece7f;token=clevis
+```
+
+4 - Configure device to bind with clevis:
+
+```
+$ sudo clevis luks bind -d /dev/sda5 pkcs11 '{"uri":"pkcs11:"}'
+```
+
+In case it is required to provide the module to use, it can be done through `module-path` URI parameter:
+
+```
+$ sudo clevis luks bind -d /dev/sda5 pkcs11 '{"uri":"pkcs11:module-path=/usr/lib64/libykcs11.so.2"}'
+```
+
+5 - Enable clevis-luks-pkcs11-askpass.socket unit:
+
+```
+$ sudo systemctl enable --now clevis-luks-pkcs11-askpass.socket
+```
+
+6 - Reboot and test:
+
+System should boot and ask for the PKCS#11 device PIN, and decrypt the corresponding configured encrypted disk only in case PIN is correct.
+
+7 - In case no boot process needs to be tested, encrypt and decrypt with next command (note it is necessary to provide the PIN value for it to work appropriately) and check encryption/decryption of a string can be performed with this one-liner, and no error takes place:
+
+```
+$ echo "top secret" | clevis encrypt pkcs11 '{"uri":"pkcs11:module-path=/usr/lib64/libykcs11.so.2?pin-value=123456"}' | clevis decrypt
+```
+
+The `top secret` string should be returned
+
 ## Requirements
 
 Regarding the necessities for the pin to be implemented, some restrictions/requirements have been identified:
@@ -203,3 +262,4 @@ Regarding the necessities for the pin to be implemented, some restrictions/requi
 [3]: https://developers.yubico.com/PIV/Introduction/Certificate_slots.html
 [4]: https://gitlab.cee.redhat.com/scorreia/clevis-pkcs11-poc
 [5]: https://people.redhat.com/~hkario/marvin
+[6]: https://github.com/sarroutbi/clevis/tree/202405281240-clevis-pkcs11
