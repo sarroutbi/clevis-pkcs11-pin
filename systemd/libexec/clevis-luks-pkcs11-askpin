@@ -1,6 +1,8 @@
 #!/bin/bash
 . clevis-luks-common-functions
 
+pkcs11_device=""
+
 if command -v pcscd; then
     echo "clevis-pkcs11: starting pcscd if not available ..."
     echo -e "clevis-pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
@@ -13,9 +15,19 @@ fi
 
 pkcs11-tool -L
 if ! pkcs11_device=$(pkcs11-tool -L | grep "Slot" | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g'); then
-    echo "No PKCS11 device detected"
+    echo "No PKCS11 device detected / pkcs11-tool error"
     exit 1
 fi
+
+while [ -z "${pkcs11_device}" ]; do
+    option=$(systemd-ask-password --echo=yes "Detected empty PKCS#11 device, continue PKCS#11 detection? [yY/nN]")
+    if [ "${option}" == "N" ] || [ "${option}" == "n" ] ; then
+        echo "Won't continue PKCS11 device detection"
+        exit 1
+    fi
+    pkcs11_device=$(pkcs11-tool -L | grep "Slot" | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
+done
+echo "Detected PKCS11 device:${pkcs11_device}"
 
 # Let's analyze all entries from /etc/crypttab that contain clevis-pkcs11.sock entries
 grep -v "^#" /etc/crypttab | while read -r line;
