@@ -50,26 +50,34 @@ grep -v "^#" /etc/crypttab | while read -r line;
 do
     if echo "${line}" | grep -E "clevis-pkcs11.sock" 1>/dev/null;
     then
-        password_found=0
+        next_device=0
         msg=""
-        while [ ${password_found} -ne 1 ]; do
+        while [ ${next_device} -ne 1 ]; do
             uuid=$(echo "${line}" | awk '{print $2}')
             noUUID=$(echo "${uuid}" | sed -e 's@UUID=@@g')
+            if ! mapped_device=$(clevis_map_device "${uuid}"); then
+                echo "Could not check mapped device for UID:${uuid}"
+                next_device=1
+                continue
+            fi
+            # If no PKCS#11 configuration, advance to next device
+            if ! clevis luks list -d "${mapped_device}" | grep pkcs11 >/dev/null 2>&1; then
+                echo "Device:${mapped_device} does not contain PKCS#11 configuration"
+                next_device=1
+                continue
+            fi
             pin=$(systemd-ask-password "${msg}Please, insert PIN for ${pkcs11_device} (${uuid}):")
             # Get key from PKCS11 pin here and feed AF_UNIX socket program
             echo "${pin}" > /run/systemd/clevis-pkcs11.pin
-            if ! mapped_device=$(clevis_map_device "${uuid}"); then
-                echo "Could not check mapped device for UID:${uuid}"
-            fi
             if ! passphrase=$(clevis_luks_unlock_device "${mapped_device}") || [ -z "${passphrase}" ]; then
                 echo "Could not unlock device:${mapped_device}"
                 if ! msg="$(get_pkcs11_error)"; then
                     echo "Detected FATAL ${msg}"
-                    exit 1
+                    next_device=1
                 fi
-                continue
+            continue
             fi
-            password_found=1
+            next_device=1
             echo "Device:${mapped_device} unlocked successfully"
             echo "${passphrase}" > /run/systemd/clevis-pkcs11."${noUUID}".passphrase
             # Send passphrase to control socket
