@@ -188,7 +188,7 @@ At high level, when an encrypted disk unlocking with no passphrase is required, 
     </li>
 </ul>
 
-To summarize: for clevis PKCS11 device unlocking without password prompt, /etc/crypttab will need to be configured with a specific socket file (name it clevis-pkcs11.sock). Clevis will provide a specific systemd unit file that parses which devices are configured to use it, so that it unlocks them with no passphrase mechanism involved, but asking for Clevis PKCS11 pin, if necessary, and performing unlock consequently.
+To summarize: for Clevis PKCS11 device unlocking without password prompt, /etc/crypttab will need to be configured with a specific socket file (name it clevis-pkcs11.sock). Clevis will provide a specific systemd unit file that parses which devices are configured to use it, so that it unlocks them with no passphrase mechanism involved, but asking for Clevis PKCS11 pin, if necessary, and performing unlock consequently.
 
 ## Installation and configuration
 
@@ -237,11 +237,28 @@ $ sudo clevis luks bind -d /dev/sda5 pkcs11 '{"uri":"pkcs11:module-path=/usr/lib
 $ sudo systemctl enable --now clevis-luks-pkcs11-askpass.socket
 ```
 
-6 - Reboot and test:
+6 - /etc/crypttab configuration:
+
+As described in [Integration with systemd](#integration-with-systemd) section, `crypttab` must be configured so that systemd uses an AF\_UNIX socket to wait for the keyphrase that will unlock the disk and not to prompt it through the console.
+
+Clevis PKCS#11 unit file will configure a socket in path `/run/systemd/clevis-pkcs11.sock` to send and receive information about disk unlocking. For disks that will be unlocked through PKCS#11 Clevis pin, that socket file must be configured as key file. So, next change must be introduced in `/etc/crypttab` for unlocking to take place:
+
+```
+$ sudo diff -Nuar /etc/crypttab.ori /etc/crypttab
+--- /etc/crypttab.ori   2024-07-04 10:46:16.295073739 +0200
++++ /etc/crypttab       2024-07-03 17:14:27.764743860 +0200
+@@ -1 +1,2 @@
+-luks-6e38d5e1-7f83-43cc-819a-7416bcbf9f84 UUID=6e38d5e1-7f83-43cc-819a-7416bcbf9f84 - -
++luks-6e38d5e1-7f83-43cc-819a-7416bcbf9f84 UUID=6e38d5e1-7f83-43cc-819a-7416bcbf9f84 /run/systemd/clevis-pkcs11.sock keyfile-timeout=30s
+```
+
+It is highly recommended to set a `keyfile-timeout` option to configure a fall-through mechanism in case some unlocking error occurs and passphrase is required to be entered manually through console.
+
+7 - Reboot and test:
 
 System should boot and ask for the PKCS#11 device PIN, and decrypt the corresponding configured encrypted disk only in case PIN is correct.
 
-7 - In case no boot process needs to be tested, encrypt and decrypt with next command (note it is necessary to provide the PIN value for it to work appropriately) and check encryption/decryption of a string can be performed with this one-liner, and no error takes place:
+8 - In case no boot process needs to be tested, encrypt and decrypt with next command (note it is necessary to provide the PIN value for it to work appropriately) and check encryption/decryption of a string can be performed with this one-liner, and no error takes place:
 
 ```
 $ echo "top secret" | clevis encrypt pkcs11 '{"uri":"pkcs11:module-path=/usr/lib64/libykcs11.so.2?pin-value=123456"}' | clevis decrypt
