@@ -10,6 +10,11 @@ get_pkcs11_error() {
         echo "ERROR:TPM2 device not found. "
         return 1
     elif journalctl -u clevis-luks-pkcs11-askpass.service -b 0 | tail -3 \
+      | egrep -E "Error.{1,}server" >/dev/null 2>&1;
+    then
+        echo "ERROR:Tang communication error. "
+        return 1
+    elif journalctl -u clevis-luks-pkcs11-askpass.service -b 0 | tail -3 \
       | grep "Invalid PIN" >/dev/null 2>&1;
     then
         echo "ERROR:Invalid PIN. "
