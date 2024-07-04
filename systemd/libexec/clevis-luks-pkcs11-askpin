@@ -8,12 +8,10 @@ get_pkcs11_error() {
       | egrep -E "A TPM2 device.{1,}needed" >/dev/null 2>&1;
     then
         echo "ERROR:TPM2 device not found. "
-        return 1
     elif journalctl -u clevis-luks-pkcs11-askpass.service -b 0 | tail -3 \
       | egrep -E "Error.{1,}server" >/dev/null 2>&1;
     then
         echo "ERROR:Tang communication error. "
-        return 1
     elif journalctl -u clevis-luks-pkcs11-askpass.service -b 0 | tail -3 \
       | grep "Invalid PIN" >/dev/null 2>&1;
     then
@@ -76,10 +74,7 @@ do
             echo "${pin}" > /run/systemd/clevis-pkcs11.pin
             if ! passphrase=$(clevis_luks_unlock_device "${mapped_device}") || [ -z "${passphrase}" ]; then
                 echo "Could not unlock device:${mapped_device}"
-                if ! msg="$(get_pkcs11_error)"; then
-                    echo "Detected FATAL ${msg}"
-                    next_device=1
-                fi
+                msg="$(get_pkcs11_error)"
             continue
             fi
             next_device=1
