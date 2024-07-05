@@ -194,20 +194,26 @@ To summarize: for Clevis PKCS11 device unlocking without password prompt, /etc/c
 
 At the initial stage, there is a branch in this feature [main developer's Clevis personal fork][6]. To try installation and configuration of the feature before it is merged in Clevis upstream repository, next steps must be followed:
 
-1 - Clone appropriate branch:
+1 - Install Clevis required dependencies:
+
+```
+$ sudo dnf install -y gcc clang cmake jose libjose-devel cryptsetup-devel socat tpm2-tools luksmeta libluksmeta-devel
+```
+
+2 - Clone appropriate branch:
 
 ```
 $ git clone https://github.com/sarroutbi/clevis -b 202405281240-clevis-pkcs11
 ```
 
-2 - Once cloned, compile and install through meson:
+3 - Once cloned, compile and install through meson:
 
 ```
 $ cd clevis
 $ rm -fr build; mkdir build; pushd build; meson setup --prefix=/usr --wipe ..; meson compile -v; sudo meson install; popd
 ```
 
-3 - The PKCS11 device must be accessible by “pkcs11-tool”:
+4 - The PKCS11 device must be accessible by “pkcs11-tool”:
 
 ```
 $ pkcs11-tool -L
@@ -219,7 +225,7 @@ Slot 0 (0x0): Yubico YubiKey OTP+CCID 00 00
   uri                : pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;serial=42facd1f749ece7f;token=clevis
 ```
 
-4 - Configure device to bind with clevis:
+5 - Configure device to bind with clevis:
 
 ```
 $ sudo clevis luks bind -d /dev/sda5 pkcs11 '{"uri":"pkcs11:"}'
@@ -231,13 +237,13 @@ In case it is required to provide the module to use, it can be done through `mod
 $ sudo clevis luks bind -d /dev/sda5 pkcs11 '{"uri":"pkcs11:module-path=/usr/lib64/libykcs11.so.2"}'
 ```
 
-5 - Enable clevis-luks-pkcs11-askpass.socket unit:
+6 - Enable clevis-luks-pkcs11-askpass.socket unit:
 
 ```
 $ sudo systemctl enable --now clevis-luks-pkcs11-askpass.socket
 ```
 
-6 - /etc/crypttab configuration:
+7 - /etc/crypttab configuration:
 
 As described in [Integration with systemd](#integration-with-systemd) section, `crypttab` must be configured so that systemd uses an AF\_UNIX socket to wait for the keyphrase that will unlock the disk and not to prompt it through the console.
 
@@ -254,11 +260,11 @@ $ sudo diff -Nuar /etc/crypttab.ori /etc/crypttab
 
 It is highly recommended to set a `keyfile-timeout` option to configure a fall-through mechanism in case some unlocking error occurs and passphrase is required to be entered manually through console.
 
-7 - Reboot and test:
+8 - Reboot and test:
 
 System should boot and ask for the PKCS#11 device PIN, and decrypt the corresponding configured encrypted disk only in case PIN is correct.
 
-8 - In case no boot process needs to be tested, encrypt and decrypt with next command (note it is necessary to provide the PIN value for it to work appropriately) and check encryption/decryption of a string can be performed with this one-liner, and no error takes place:
+9 - In case no boot process needs to be tested, encrypt and decrypt with next command (note it is necessary to provide the PIN value for it to work appropriately) and check encryption/decryption of a string can be performed with this one-liner, and no error takes place:
 
 ```
 $ echo "top secret" | clevis encrypt pkcs11 '{"uri":"pkcs11:module-path=/usr/lib64/libykcs11.so.2?pin-value=123456"}' | clevis decrypt
