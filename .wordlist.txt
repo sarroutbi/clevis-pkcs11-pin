@@ -12,6 +12,7 @@ initramfs
 keyfile
 keyphrase
 luks
+md
 NBDE
 openssl
 OAEP
