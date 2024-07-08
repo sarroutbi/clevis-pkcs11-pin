@@ -20,6 +20,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +62,7 @@ get_control_socket_name(const char* file_sock, char* control_sock, uint32_t cont
     char *p = strstr(file_sock, ".sock");
     size_t prefix_length = strlen(file_sock) - strlen(p);
     memset(control_sock, 0, control_sock_len);
-    strncpy(control_sock, file_sock, prefix_length);
+    memcpy(control_sock, file_sock, prefix_length);
     if (prefix_length + strlen(".control.sock") < control_sock_len) {
         strcat(control_sock + prefix_length, ".control.sock");
     }
@@ -158,7 +159,8 @@ int main(int argc, char* argv[]) {
         memset(&keys[e], 0, sizeof(key_entry_t));
     }
     uint32_t iterations = MAX_ITERATIONS, startdelay = START_DELAY;
-    uint32_t ic, time = 0;
+    uint32_t ic = 0;
+    uint32_t time = 0;
     char sock_file[MAX_PATH];
     char sock_control_file[MAX_PATH];
     char key[MAX_KEY];
@@ -172,13 +174,13 @@ int main(int argc, char* argv[]) {
         int ret_code = EXIT_FAILURE;
         switch (opt) {
         case 'c':
-            strncpy(sock_control_file, optarg, MAX_PATH);
+            strncpy(sock_control_file, optarg, MAX_PATH - 1);
             break;
         case 'f':
-            strncpy(sock_file, optarg, MAX_PATH);
+            strncpy(sock_file, optarg, MAX_PATH - 1);
             break;
         case 'k':
-            strncpy(key, optarg, MAX_KEY);
+            strncpy(key, optarg, MAX_KEY - 1);
             break;
         case 't':
             iterations = strtoul(optarg, 0, 10);
@@ -265,7 +267,7 @@ int main(int argc, char* argv[]) {
         printf("Try: [%u/%u]\n", ic, iterations);
         printf("getpeername sun_path(peer): [%s]\n", peer);
         char* t = peer;
-        const char* unlocking_device;
+        const char* unlocking_device = "";
         while((t = strtok(t, "/"))) {
             if(t) {
                 unlocking_device = t;
