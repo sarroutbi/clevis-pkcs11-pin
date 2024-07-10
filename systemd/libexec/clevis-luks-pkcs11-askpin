@@ -1,5 +1,6 @@
 #!/bin/bash
 . clevis-luks-common-functions
+. clevis-pkcs11-common
 
 pkcs11_device=""
 
@@ -69,7 +70,11 @@ do
                 next_device=1
                 continue
             fi
-            pin=$(systemd-ask-password "${msg}Please, insert PIN for ${pkcs11_device} (${uuid}):")
+            # Check if configuration contains a pin
+            uri=$(clevis luks list -d "${mapped_device}" | awk -F '"uri":' '{print $2}' | awk -F '"' '{print $2}' | awk -F '"' '{print $1}')
+            if ! pin=$(clevis_get_pin_value_from_uri "${uri}"); then
+                        pin=$(systemd-ask-password "${msg}Please, insert PIN for ${pkcs11_device} (${uuid}):")
+            fi
             # Get key from PKCS11 pin here and feed AF_UNIX socket program
             echo "${pin}" > /run/systemd/clevis-pkcs11.pin
             if ! passphrase=$(clevis_luks_unlock_device "${mapped_device}") || [ -z "${passphrase}" ]; then
