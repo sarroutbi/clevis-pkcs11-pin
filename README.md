@@ -1,6 +1,6 @@
 # clevis-pkcs11-pin
 
-This repository will hold the up-to-date development of the Clevis PKCS#11 feature.
+This repository stores the up-to-date development of the Clevis PKCS#11 feature.
 
 For feature specific details, check [ARCHITECTURE.md](https://github.com/sarroutbi/clevis-pkcs11-pin/blob/main/ARCHITECTURE.md).
 
