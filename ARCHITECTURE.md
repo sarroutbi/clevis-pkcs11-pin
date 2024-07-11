@@ -194,10 +194,10 @@ To summarize: for Clevis PKCS11 device unlocking without password prompt, /etc/c
 
 At the initial stage, there is a branch in this feature [main developer's Clevis personal fork][6]. To try installation and configuration of the feature before it is merged in Clevis upstream repository, next steps must be followed:
 
-1 - Install Clevis required dependencies:
+1 - Install Clevis required dependencies, including PKCS#11 dependencies:
 
 ```
-$ sudo dnf install -y gcc clang cmake jose libjose-devel cryptsetup-devel socat tpm2-tools luksmeta libluksmeta-devel
+$ sudo dnf install -y gcc clang cmake jose libjose-devel cryptsetup-devel socat tpm2-tools luksmeta libluksmeta-devel opensc pcsc-lite
 ```
 
 2 - Clone appropriate branch:
