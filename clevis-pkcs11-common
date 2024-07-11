@@ -17,13 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+if [ "$1" == "--summary" ]; then
+    exit 1
+fi
+
 clevis_valid_pkcs11_uri() {
     echo "$1" | grep -E "^${URI_EXPECTED_FORMAT}" >/dev/null 2>&1 || return 1
 }
 
 clevis_get_module_path_from_uri() {
     echo "$1" | grep -E "module-path=" >/dev/null 2>&1 || return 1
-    echo "$1" | awk -F 'module-path=' '{print $2}' | awk -F ";" '{print $1}' | awk -F "?" '{print $1}'
+    echo "$1" | awk -F 'module-path=' '{print $2}' | awk -F ";" '{print $1}' \
+        | awk -F "?" '{print $1}'
 }
 
 clevis_get_pin_value_from_uri() {
