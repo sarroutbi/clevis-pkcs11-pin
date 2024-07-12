@@ -180,9 +180,14 @@ clevis_luks_print_pin_config() {
     pkcs11)
         local uri
         uri="$(jose fmt -j- -g uri -u- <<< "${content}")"
-        pin=$(printf '{"uri":"%s"}' "${uri}")
+        mechanism="$(jose fmt -j- -g mechanism -u- <<< "${content}")"
+        if [ -z "${mechanism}" ]; then
+            pin=$(printf '{"uri":"%s"}' "${uri}")
+        else
+            pin=$(printf '{"uri":"%s", "mechanism":"%s"}' "${uri}" "${mechanism}")
+        fi
         printf "pkcs11 '%s'" "${pin}"
-	;;
+        ;;
     sss)
         local threshold
         threshold=$(jose fmt -j- -Og t -o- <<< "${content}")

@@ -65,6 +65,13 @@ if ! uri="$(jose fmt -j- -Og clevis -g "${PIN_NAME}" -g uri -Su- <<< "${hdr}")";
     exit 1
 fi
 
+mechanism_option=""
+mechanism="$(jose fmt -j- -Og clevis -g "${PIN_NAME}" -g mechanism -Su- <<< "${hdr}")" \
+             2>/dev/null || :
+if [ -n "${mechanism}" ]; then
+    mechanism_option="--mechanism ${mechanism}"
+fi
+
 if ! clevis_valid_pkcs11_uri "${uri}"; then
     echo "PKCS#11 URI with invalid format:[${uri}]" >&2
     echo "PKCS#11 URI expected format:[${URI_EXPECTED_FORMAT}]" >&2
@@ -108,7 +115,7 @@ if ! PIN_value="$(clevis_get_pin_value_from_uri ${uri})"; then
 fi
 
 if ! jwk="$(pkcs11-tool --login --decrypt --input-file ${ENC} \
-            -p ${PIN_value} --module ${module_path} 2>${ERR})" \
+            -p ${PIN_value} --module ${module_path} ${mechanism_option} 2>${ERR})" \
             || [ -z "${jwk}" ]; then
     cat "${ERR}" >&2
     echo "Unable to decrypt the JWK" >&2
