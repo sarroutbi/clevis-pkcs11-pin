@@ -21,6 +21,8 @@ if [ "$1" == "--summary" ]; then
     exit 1
 fi
 
+URI_EXPECTED_FORMAT="pkcs11:"
+
 clevis_valid_pkcs11_uri() {
     echo "$1" | grep -E "^${URI_EXPECTED_FORMAT}" >/dev/null 2>&1 || return 1
 }
