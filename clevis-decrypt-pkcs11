@@ -108,7 +108,6 @@ if ! printf '%s' "${enc_jwk}" | jose b64 dec -i- > "${ENC}"  2>"${ERR}"; then
     exit 1
 fi
 
-DEC="${CLEVIS_PKCS11}/dec"
 PIN_value=""
 if ! PIN_value="$(clevis_get_pin_value_from_uri ${uri})"; then
     PIN_value=$(cat "${PIN_FILE}" 2>/dev/null || :)
