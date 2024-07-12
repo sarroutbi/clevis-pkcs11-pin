@@ -60,6 +60,12 @@ if ! uri="$(jose fmt -j- -Og uri -u- <<< "$cfg")"; then
     exit 1
 fi
 
+if ! clevis_valid_pkcs11_uri "${uri}"; then
+    echo "PKCS#11 URI with invalid format:[${uri}]" >&2
+    echo "PKCS#11 URI expected format:[${URI_EXPECTED_FORMAT}]" >&2
+    exit 1
+fi
+
 if ! module_path=$(clevis_get_module_path_from_uri "${uri}"); then
     module_opt=""
 else
