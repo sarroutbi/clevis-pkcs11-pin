@@ -25,7 +25,8 @@ get_pkcs11_error() {
 
 if command -v pcscd; then
     echo "clevis-pkcs11: starting pcscd if not available ..."
-    echo -e "clevis-pkcs11: pcscd running?:[$(ps auxf | grep [p]cscd)]\n"
+    PCSCD_PID=$(ps auxf | grep "[p]cscd")
+    echo -e "clevis-pkcs11: pcscd running?:[${PCSCD_PID}]\n"
     if ! ps auxf | grep "[p]cscd";
     then
         echo "clevis-pkcs11: starting pcscd ..."
