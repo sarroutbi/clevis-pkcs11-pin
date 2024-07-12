@@ -91,9 +91,13 @@ if ! CLEVIS_PKCS11="$(mktemp -d)" || [ -z "${CLEVIS_PKCS11}" ]; then
 fi
 trap 'on_exit' EXIT
 
+# Error file
+ERR="${CLEVIS_PKCS11}/decerr"
+
 # Decrypt the key.
 ENC="${CLEVIS_PKCS11}/enc"
-if ! printf '%s' "${enc_jwk}" | jose b64 dec -i- > "${ENC}" 2>/dev/null; then
+if ! printf '%s' "${enc_jwk}" | jose b64 dec -i- > "${ENC}"  2>"${ERR}"; then
+    cat "${ERR}" >&2
     echo "Unable to base64-decode the JWK" >&2
     exit 1
 fi
@@ -105,14 +109,17 @@ if ! PIN_value="$(clevis_get_pin_value_from_uri ${uri})"; then
 fi
 
 if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN_value}"-login --test \
-                 -p "${PIN_value}" 2>/dev/null >/dev/null; then
+                 -p "${PIN_value}" --module "${module_path}" \
+                 2>"${ERR}" >/dev/null; then
+    cat "${ERR}" >&2
     echo "Invalid PIN" >&2
     exit 1
 fi
 
 if ! jwk="$(pkcs11-tool --login --decrypt --input-file ${ENC} \
-            -p ${PIN_value} --module ${module_path} 2>/dev/null)" \
+            -p ${PIN_value} --module ${module_path} 2>${ERR})" \
             || [ -z "${jwk}" ]; then
+    cat "${ERR}" >&2
     echo "Unable to decrypt the JWK" >&2
     exit 1
 fi
