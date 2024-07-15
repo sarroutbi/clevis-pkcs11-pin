@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -152,6 +151,13 @@ static void* control_thread(void *targ) {
     return NULL;
 }
 
+static int usage(const char* name, uint32_t ecode) {
+    printf("\nUsage:\n\t%s -f socket_file [-c control_socket] [-k key] "
+           "[-t iterations, 3 by default] "
+           "[-s start delay, 0s by default]\n\n", name);
+    exit(ecode);
+}
+
 int main(int argc, char* argv[]) {
     int s, a, opt, ret;
     // The device entries
@@ -164,6 +170,7 @@ int main(int argc, char* argv[]) {
     char sock_file[MAX_PATH];
     char sock_control_file[MAX_PATH];
     char key[MAX_KEY];
+    memset(sock_file, 0, MAX_PATH);
     memset(sock_control_file, 0, MAX_PATH);
     memset(key, 0, MAX_KEY);
     struct sockaddr_un sock_addr, accept_addr, peer_addr;
@@ -192,11 +199,12 @@ int main(int argc, char* argv[]) {
             ret_code = EXIT_SUCCESS;
             __attribute__ ((fallthrough));
         default:
-            printf("Usage: %s -f socket_file [-c control_socket] [-k key] "\
-                   "[-t iterations, 3 by default] "\
-                   "[-s start delay, 0s by default]\n", argv[0]);
-            exit(ret_code);
+            usage(argv[0], ret_code);
         }
+    }
+    if(0 == strlen(sock_file)) {
+        fprintf(stderr, "Socket file name must be provided\n");
+        usage(argv[0], EXIT_FAILURE);
     }
     printf("VERSION: [%s]\n", VERSION);
     printf("KEY: [%s]\n", key);
