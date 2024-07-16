@@ -142,7 +142,8 @@ static void* control_thread(void *targ) {
             } else {
                 printf("Adding key:%s\n", t);
                 insert_key(t);
-                // As long as some key is inserted, we store it in the control_thread_info variable
+                // As long as some key is inserted, we store it
+                // in the control_thread_info variable
                 control_thread_info = 1;
             }
             t = strtok(NULL, ",");
@@ -153,9 +154,19 @@ static void* control_thread(void *targ) {
 
 static int usage(const char* name, uint32_t ecode) {
     printf("\nUsage:\n\t%s -f socket_file [-c control_socket] [-k key] "
-           "[-t iterations, 3 by default] "
-           "[-s start delay, 0s by default]\n\n", name);
+           "[-t iterations, 3 by default]"
+           "[-s start delay, 0s by default] [-v(version)] [-h(help)]\n\n", name);
     exit(ecode);
+}
+
+static void dump_version(void) {
+    printf("VERSION: [%s]\n", VERSION);
+}
+
+static void dump_wide_version(void) {
+    printf("\n");
+    dump_version();
+    printf("\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -177,7 +188,7 @@ int main(int argc, char* argv[]) {
     socklen_t len;
     socklen_t pathlen;
 
-    while ((opt = getopt(argc, argv, "c:f:k:i:s:t:h")) != -1) {
+    while ((opt = getopt(argc, argv, "c:f:k:i:s:t:hv")) != -1) {
         int ret_code = EXIT_FAILURE;
         switch (opt) {
         case 'c':
@@ -195,6 +206,10 @@ int main(int argc, char* argv[]) {
         case 's':
             startdelay = strtoul(optarg, 0, 10);
             break;
+        case 'v':
+            dump_wide_version();
+            exit(EXIT_SUCCESS);
+            break;
         case 'h':
             ret_code = EXIT_SUCCESS;
             __attribute__ ((fallthrough));
@@ -203,18 +218,18 @@ int main(int argc, char* argv[]) {
         }
     }
     if(0 == strlen(sock_file)) {
-        fprintf(stderr, "Socket file name must be provided\n");
+        fprintf(stderr, "\nSocket file name must be provided\n");
         usage(argv[0], EXIT_FAILURE);
     }
-    printf("VERSION: [%s]\n", VERSION);
-    printf("KEY: [%s]\n", key);
-    printf("TRY ITERATIONS: [%u]\n", iterations);
-    printf("START DELAY: [%u] seconds\n", startdelay);
-    printf("FILE: [%s]\n", sock_file);
     if(0 == strlen(sock_control_file) ) {
       get_control_socket_name(sock_file, sock_control_file, MAX_PATH);
     }
     printf("CONTROL FILE: [%s]\n", sock_control_file);
+    printf("FILE: [%s]\n", sock_file);
+    printf("KEY: [%s]\n", key);
+    printf("START DELAY: [%u] seconds\n", startdelay);
+    printf("TRY ITERATIONS: [%u]\n", iterations);
+    dump_version();
 
     pthread_t thid;
     void* tret;
