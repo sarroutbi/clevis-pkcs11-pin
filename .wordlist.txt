@@ -24,7 +24,11 @@ PKCS#11
 PIV
 PolicyKit
 RSA
+RSA-PKCS
+RSA-PKCS-OAEP
 sarroutbi
+softhsm
+SoftHSM
 systemd
 TPM
 URI
