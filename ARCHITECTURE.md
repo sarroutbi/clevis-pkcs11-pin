@@ -96,6 +96,18 @@ module-path=/usr/local/lib64/libmypkcs11.so"}'
 
 For security reasons, no PIN related information will be shown.
 
+### Configuration to provide a different mechanism to PKCS#11 tool
+
+In the first phase of development, Clevis will be used in top of OpenSC to provide PKCS#11 functionality.
+OpenSC, and, in particular, `pkcs11-tool`, provides an option to indicate the mechanism to use for decryption.
+For testing purposes, some libraries (such as [SoftHSM][7]), don't work with default `pkcs11-tool` mechanism,
+so it is  required to provide a particular mechanism to use. For this reason, Clevis can be provided with
+the mechanism to use, in case the default one, `RSA-PKCS-OAEP`, is not valid:
+
+```
+$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:", "mechanism":"RSA-PKCS"}'
+```
+
 ### Examples of errors on Clevis configuration
 
 An example of an invalid device provided is shown below:
@@ -286,3 +298,4 @@ Regarding the necessities for the pin to be implemented, some restrictions/requi
 [4]: https://gitlab.cee.redhat.com/scorreia/clevis-pkcs11-poc
 [5]: https://people.redhat.com/~hkario/marvin
 [6]: https://github.com/sarroutbi/clevis/tree/202405281240-clevis-pkcs11
+[7]: https://www.opendnssec.org/softhsm
