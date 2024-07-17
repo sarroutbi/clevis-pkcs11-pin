@@ -10,3 +10,6 @@ all:
 clean:
 	rm -fv $(EXE_FILE)
 test:
+	./$(EXE_FILE) -v
+	./$(EXE_FILE) -h
+	! ./$(EXE_FILE)
