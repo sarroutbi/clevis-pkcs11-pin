@@ -1,0 +1,15 @@
+---
+name: "Basic compilation"
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@main
+      - name: build systemd applications
+        run: make -C systemd
