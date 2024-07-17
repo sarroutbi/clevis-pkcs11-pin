@@ -1,5 +1,5 @@
 ---
-name: "Basic compilation"
+name: "Basic compilation and tests"
 on:
   push:
     branches:
@@ -13,3 +13,5 @@ jobs:
         uses: actions/checkout@main
       - name: build systemd applications
         run: make -C systemd
+      - name: basic systemd applications test
+        run: make -C systemd test
