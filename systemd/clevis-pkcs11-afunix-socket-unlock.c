@@ -39,12 +39,12 @@ const char* VERSION = "v0.0.0";
 #define MAX_ENTRIES 1024
 #define MAX_KEY 1024
 
-const uint16_t MAX_ITERATIONS = 3;
+const uint16_t DEFAULT_MAX_ITERATIONS = 3;
 const uint16_t MAX_PATH = 1024;
 const uint16_t MAX_CONTROL_MSG = 1024;
 
 // Time to wait before trying to write key
-const uint16_t START_DELAY = 0;
+const uint16_t DEFAULT_START_DELAY = 0;
 
 typedef struct {
     char dev[MAX_DEVICE];
@@ -171,23 +171,22 @@ static void dump_wide_version(void) {
 
 int main(int argc, char* argv[]) {
     int s, a, opt, ret;
-    // The device entries
-    for (uint16_t e = 0; e < MAX_ENTRIES; e++) {
-        memset(&keys[e], 0, sizeof(key_entry_t));
-    }
-    uint32_t iterations = MAX_ITERATIONS, startdelay = START_DELAY;
-    uint32_t ic = 0;
-    uint32_t time = 0;
-    char sock_file[MAX_PATH];
-    char sock_control_file[MAX_PATH];
-    char key[MAX_KEY];
-    memset(sock_file, 0, MAX_PATH);
-    memset(sock_control_file, 0, MAX_PATH);
-    memset(key, 0, MAX_KEY);
     struct sockaddr_un sock_addr, accept_addr, peer_addr;
     socklen_t len;
     socklen_t pathlen;
-
+    char sock_file[MAX_PATH];
+    char sock_control_file[MAX_PATH];
+    char key[MAX_KEY];
+    uint32_t iterations = DEFAULT_MAX_ITERATIONS;
+    uint32_t startdelay = DEFAULT_START_DELAY;
+    uint32_t ic = 0;
+    uint32_t time = 0;
+    memset(sock_file, 0, MAX_PATH);
+    memset(sock_control_file, 0, MAX_PATH);
+    memset(key, 0, MAX_KEY);
+    for (uint16_t e = 0; e < MAX_ENTRIES; e++) {
+        memset(&keys[e], 0, sizeof(key_entry_t));
+    }
     while ((opt = getopt(argc, argv, "c:f:k:i:s:t:hv")) != -1) {
         int ret_code = EXIT_FAILURE;
         switch (opt) {
