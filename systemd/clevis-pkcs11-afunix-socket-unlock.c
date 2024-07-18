@@ -101,7 +101,7 @@ static const char* get_key(const char* dev) {
 static void* control_thread(void *targ) {
     // Create a socket to listen on control socket
     struct sockaddr_un control_addr, accept_addr;
-    int s, a, ret;
+    int s, a;
     char control_msg[MAX_CONTROL_MSG];
     const char* control_sock = (const char*)targ;
     socklen_t len;
@@ -114,13 +114,11 @@ static void* control_thread(void *targ) {
         perror("control socket");
         pthread_exit("control socket");
     }
-    ret = bind(s, (struct sockaddr *)&control_addr, sizeof(control_addr));
-    if (ret == -1) {
+    if (bind(s, (struct sockaddr *)&control_addr, sizeof(control_addr)) == -1) {
         perror("control bind");
         pthread_exit("control bind");
     }
-    ret = listen(s, SOMAXCONN);
-    if (ret == -1) {
+    if (listen(s, SOMAXCONN) == -1) {
         perror("control listen");
         pthread_exit("control listen");
     }
@@ -170,9 +168,9 @@ static void dump_wide_version(void) {
 }
 
 int main(int argc, char* argv[]) {
-    int s, a, opt, ret;
+    int s, a, opt;
     struct sockaddr_un sock_addr, accept_addr, peer_addr;
-    socklen_t len;
+    socklen_t len = sizeof(accept_addr);
     socklen_t pathlen;
     char sock_file[MAX_PATH];
     char sock_control_file[MAX_PATH];
@@ -232,7 +230,6 @@ int main(int argc, char* argv[]) {
 
     pthread_t thid;
     void* tret;
-    // Create control socket thread
     if (pthread_create(&thid, NULL, control_thread, sock_control_file) != 0) {
         perror("pthread_create() error");
         exit(EXIT_FAILURE);
@@ -242,27 +239,19 @@ int main(int argc, char* argv[]) {
     sock_addr.sun_family = AF_UNIX;
     strcpy(sock_addr.sun_path, sock_file);
     unlink(sock_file);
-
     s = socket(AF_UNIX, SOCK_STREAM, 0);
     if (s == -1) {
         perror("socket");
         exit(EXIT_FAILURE);
     }
-
-    ret = bind(s, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
-    if (ret == -1) {
+    if (bind(s, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) == -1) {
         perror("bind");
         exit(EXIT_FAILURE);
     }
-
-    ret = listen(s, SOMAXCONN);
-    if (ret == -1) {
+    if (listen(s, SOMAXCONN) == -1) {
         perror("listen");
         exit(EXIT_FAILURE);
     }
-
-    len = sizeof(accept_addr);
-
     while (ic < iterations) {
         if (time++ < startdelay && !control_thread_info) {
             sleep(1);
@@ -276,12 +265,10 @@ int main(int argc, char* argv[]) {
         }
         pathlen = len - offsetof(struct sockaddr_un, sun_path);
         len = sizeof(peer_addr);
-        ret = getpeername(a, (struct sockaddr *)&peer_addr, &len);
-        if (ret == -1) {
+        if (getpeername(a, (struct sockaddr *)&peer_addr, &len)== -1) {
             perror("getpeername");
             exit(EXIT_FAILURE);
         }
-
         pathlen = len - offsetof(struct sockaddr_un, sun_path);
         char peer[pathlen];
         memset(peer, 0, pathlen);
