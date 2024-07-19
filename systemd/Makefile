@@ -9,7 +9,7 @@ all:
 	$(CC) *.c -DGIT_VERSION=\"$(VERSION)-$(GIT_VERSION)\" -o $(EXE_FILE)
 clean:
 	rm -fv $(EXE_FILE)
-test:
+test: all
 	./$(EXE_FILE) -v
 	./$(EXE_FILE) -h
 	! ./$(EXE_FILE)
