@@ -35,6 +35,15 @@ In case it is required to provide a module library, it can be done through URI
 
     $ clevis encrypt pkcs11 '{"uri":"pkcs11:module-path=/usr/lib64/libykcs11.so"}' < PT > JWE
 
+Clevis will be used in top of OpenSC to provide PKCS#11 functionality. OpenSC, and,
+in particular, `pkcs11-tool`, provides an option to indicate the mechanism to use for decryption.
+For testing purposes, some libraries, such as https://www.opendnssec.org/softhsm[SoftHSM],
+don't work with default `pkcs11-tool` mechanism, so it is required to provide a particular
+mechanism for them to work. For this reason, Clevis can be provided with
+the mechanism to use, in case the default one, *RSA-PKCS-OAEP*, is not valid:
+
+    $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:", "mechanism":"RSA-PKCS"}'
+
 To decrypt the data, simply provide the ciphertext (JWE):
 
     $ clevis decrypt < JWE > PT
