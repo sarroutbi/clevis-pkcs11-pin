@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2024 Red Hat, Inc.
- * Author: Red Hat Inc.
+ * Author: Sergio Arroutbi <sarroutb@redhat.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ get_control_socket_name(const char* file_sock, char* control_sock, uint32_t cont
 }
 
 static void insert_device(const char* dev) {
-    if(entry_counter == MAX_ENTRIES) {
+    if(MAX_ENTRIES == entry_counter) {
         perror("No more entries accepted\n");
     }
     pthread_mutex_lock(&mutex);
@@ -77,7 +77,7 @@ static void insert_device(const char* dev) {
 }
 
 static void insert_key(const char* key) {
-    if(entry_counter == MAX_ENTRIES) {
+    if(MAX_ENTRIES == entry_counter) {
         perror("No more entries accepted\n");
     }
     pthread_mutex_lock(&mutex);
@@ -170,11 +170,11 @@ static void dump_wide_version(void) {
 int main(int argc, char* argv[]) {
     int s, a, opt;
     struct sockaddr_un sock_addr, accept_addr, peer_addr;
-    socklen_t len = sizeof(accept_addr);
     socklen_t pathlen;
     char sock_file[MAX_PATH];
     char sock_control_file[MAX_PATH];
     char key[MAX_KEY];
+    socklen_t len = sizeof(accept_addr);
     uint32_t iterations = DEFAULT_MAX_ITERATIONS;
     uint32_t startdelay = DEFAULT_START_DELAY;
     uint32_t ic = 0;
