@@ -7,13 +7,14 @@ CLEVIS_SLOT?=1
 CLEVIS_LUKS_ASKPASS_PATCH=clevis-luks-askpass.patch
 PIN?=123456
 MD2PDF?=md2pdf
+MODULE_PATH?=/usr/lib64/libykcs11.so
 
 all: check
 	@true
 
 clean:
+	make -C systemd clean
 	@rm -frv ./*.pdf
-	@true
 
 pdf:
 	@(type $(MD2PDF) && $(MD2PDF) ARCHITECTURE.md ARCHITECTURE.pdf || echo "$(MD2PDF) not found") > /dev/null
@@ -47,7 +48,7 @@ test: clevis-encrypt-test pkcs-tool-test clevis-luks-list-test clevis-luks-pass-
 
 clevis-encrypt-test:
 	@echo "--------------------------------------------------------------------------------"
-	echo secret | clevis encrypt pkcs11 '{}' | clevis decrypt
+	echo secret | clevis encrypt pkcs11 '{"uri":"pkcs11:module-path=$(MODULE_PATH)?pin-value=$(PIN)"}' | clevis decrypt
 
 pkcs-tool-test:
 	@echo "--------------------------------------------------------------------------------"
