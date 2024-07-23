@@ -2,7 +2,7 @@
 set -eo pipefail
 # vim: set ts=8 shiftwidth=4 softtabstop=4 expandtab smarttab colorcolumn=80:
 #
-# Copyright (c) 2021 Red Hat, Inc.
+# Copyright (c) 2024 Red Hat, Inc.
 # Author: Sergio Correia <scorreia@redhat.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -74,6 +74,12 @@ else
     module_opt=" --module ${module_path}"
 fi
 
+if ! slot=$(clevis_get_slot_from_uri "${uri}"); then
+    slot_opt=""
+else
+    slot_opt=" --slot-index ${slot}"
+fi
+
 if ! CLEVIS_PKCS11="$(mktemp -d)" || [ -z "${CLEVIS_PKCS11}" ]; then
     echo "Creating a temporary dir for PKCS11 files failed" >&2
     exit 1
@@ -92,7 +98,7 @@ fi
 
 # Now let's encrypt it with the device public key.
 PKEY="${CLEVIS_PKCS11}/pubkey"
-if ! id=$(pkcs11-tool -O 2>${ERR} ${module_opt} \
+if ! id=$(pkcs11-tool ${slot_opt} -O 2>${ERR} ${module_opt} \
           | grep -i 'Public' -A10 2>${ERR} | grep 'ID:' \
 	  | head -1 | awk -F 'ID:' '{print $2}' | tr -d ' '); then
     cat "${ERR}" >&2
