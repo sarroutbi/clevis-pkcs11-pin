@@ -291,7 +291,7 @@ $ sudo diff -Nuar /etc/crypttab.ori /etc/crypttab
 +luks-6e38d5e1-7f83-43cc-819a-7416bcbf9f84 UUID=6e38d5e1-7f83-43cc-819a-7416bcbf9f84 /run/systemd/clevis-pkcs11.sock keyfile-timeout=30s
 ```
 
-It is highly recommended to set a `keyfile-timeout` option to configure a fall-through mechanism in case some unlocking error occurs and passphrase is required to be entered manually through console.
+It is highly recommended setting a `keyfile-timeout` option to configure a fall-through mechanism in case some unlocking error occurs and passphrase is required to be entered manually through console.
 
 8 - Reboot and test:
 
