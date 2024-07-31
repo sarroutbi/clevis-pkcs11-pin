@@ -32,7 +32,7 @@
 #ifdef GIT_VERSION
 const char* VERSION = GIT_VERSION;
 #else
-const char* VERSION = "v0.0.0";
+const char* VERSION = "v0.0.1";
 #endif
 
 #define MAX_DEVICE 1024
@@ -55,6 +55,7 @@ uint16_t entry_counter = 0;
 uint8_t thread_loop = 1;
 uint8_t control_thread_info = 0;
 pthread_mutex_t mutex;
+FILE* logfile = NULL;
 
 static void
 get_control_socket_name(const char* file_sock, char* control_sock, uint32_t control_sock_len) {
@@ -85,7 +86,6 @@ static void insert_key(const char* key) {
     pthread_mutex_unlock(&mutex);
 }
 
-
 static const char* get_key(const char* dev) {
     for(int e = 0; e < entry_counter; e++) {
         pthread_mutex_lock(&mutex);
@@ -112,33 +112,38 @@ static void* control_thread(void *targ) {
     s = socket(AF_UNIX, SOCK_STREAM, 0);
     if (s == -1) {
         perror("control socket");
+        fprintf(logfile, "Control socket error\n");
         pthread_exit("control socket");
     }
     if (bind(s, (struct sockaddr *)&control_addr, sizeof(control_addr)) == -1) {
         perror("control bind");
+        fprintf(logfile, "Control bind error\n");
         pthread_exit("control bind");
     }
     if (listen(s, SOMAXCONN) == -1) {
         perror("control listen");
+        fprintf(logfile, "Control listen error\n");
         pthread_exit("control listen");
     }
     while (thread_loop) {
         a = accept(s, (struct sockaddr *)&accept_addr, &len);
         if (a == -1) {
             perror("control accept");
+            fprintf(logfile, "Control accept\n");
             pthread_exit("control accept");
         }
         memset(control_msg, 0, MAX_CONTROL_MSG);
         recv(a, control_msg, MAX_CONTROL_MSG, 0);
         char* t = control_msg;
         int is_device = 1;
+        fprintf(logfile, "Received control message:[%s]\n", t);
         while((t = strtok(t, ","))) {
             if (is_device) {
-                printf("Adding device:%s\n", t);
+                fprintf(logfile, "Adding device:%s\n", t);
                 insert_device(t);
                 is_device = 0;
             } else {
-                printf("Adding key:%s\n", t);
+                fprintf(logfile, "Adding key:%s\n", t);
                 insert_key(t);
                 // As long as some key is inserted, we store it
                 // in the control_thread_info variable
@@ -152,7 +157,7 @@ static void* control_thread(void *targ) {
 
 static int usage(const char* name, uint32_t ecode) {
     printf("\nUsage:\n\t%s -f socket_file [-c control_socket] [-k key] "
-           "[-t iterations, 3 by default]"
+           "[-l logfile] [-t iterations, 3 by default]"
            "[-s start delay, 0s by default] [-v(version)] [-h(help)]\n\n", name);
     exit(ecode);
 }
@@ -167,25 +172,37 @@ static void dump_wide_version(void) {
     printf("\n");
 }
 
+static void int_handler(int s) {
+    if(logfile) {
+        fprintf(logfile, "Closing, signal:[%d]\n", s);
+        fclose(logfile);
+    }
+    exit(EXIT_FAILURE);
+}
+
 int main(int argc, char* argv[]) {
     int s, a, opt;
     struct sockaddr_un sock_addr, accept_addr, peer_addr;
     socklen_t pathlen;
+    char key[MAX_KEY];
+    char lfile[MAX_PATH];
     char sock_file[MAX_PATH];
     char sock_control_file[MAX_PATH];
-    char key[MAX_KEY];
     socklen_t len = sizeof(accept_addr);
     uint32_t iterations = DEFAULT_MAX_ITERATIONS;
     uint32_t startdelay = DEFAULT_START_DELAY;
     uint32_t ic = 0;
     uint32_t time = 0;
+    memset(lfile, 0, MAX_PATH);
     memset(sock_file, 0, MAX_PATH);
     memset(sock_control_file, 0, MAX_PATH);
     memset(key, 0, MAX_KEY);
+
+    signal(SIGTERM | SIGKILL, int_handler);
     for (uint16_t e = 0; e < MAX_ENTRIES; e++) {
         memset(&keys[e], 0, sizeof(key_entry_t));
     }
-    while ((opt = getopt(argc, argv, "c:f:k:i:s:t:hv")) != -1) {
+    while ((opt = getopt(argc, argv, "c:f:k:i:l:s:t:hv")) != -1) {
         int ret_code = EXIT_FAILURE;
         switch (opt) {
         case 'c':
@@ -196,6 +213,10 @@ int main(int argc, char* argv[]) {
             break;
         case 'k':
             strncpy(key, optarg, MAX_KEY - 1);
+            break;
+        case 'l':
+            strncpy(lfile, optarg, MAX_PATH - 1);
+            logfile = fopen(lfile, "w+");
             break;
         case 't':
             iterations = strtoul(optarg, 0, 10);
@@ -214,25 +235,29 @@ int main(int argc, char* argv[]) {
             usage(argv[0], ret_code);
         }
     }
+    if(!logfile) {
+        logfile = stdout;
+        strncpy(lfile, "stdout", MAX_PATH - 1);
+    }
     if(0 == strlen(sock_file)) {
-        fprintf(stderr, "\nSocket file name must be provided\n");
+        fprintf(logfile, "\nSocket file name must be provided\n");
         usage(argv[0], EXIT_FAILURE);
     }
     if(0 == strlen(sock_control_file) ) {
-      get_control_socket_name(sock_file, sock_control_file, MAX_PATH);
+        get_control_socket_name(sock_file, sock_control_file, MAX_PATH);
     }
-    printf("CONTROL FILE: [%s]\n", sock_control_file);
-    printf("FILE: [%s]\n", sock_file);
-    printf("KEY: [%s]\n", key);
-    printf("START DELAY: [%u] seconds\n", startdelay);
-    printf("TRY ITERATIONS: [%u]\n", iterations);
+    fprintf(logfile, "LOG FILE: [%s]\n", lfile);
+    fprintf(logfile, "FILE: [%s]\n", sock_file);
+    fprintf(logfile, "KEY: [%s]\n", key);
+    fprintf(logfile, "START DELAY: [%u] seconds\n", startdelay);
+    fprintf(logfile, "TRY ITERATIONS: [%u]\n", iterations);
     dump_version();
 
     pthread_t thid;
     void* tret;
     if (pthread_create(&thid, NULL, control_thread, sock_control_file) != 0) {
         perror("pthread_create() error");
-        exit(EXIT_FAILURE);
+        goto efailure;
     }
 
     memset(&sock_addr, 0, sizeof(sock_addr));
@@ -242,39 +267,40 @@ int main(int argc, char* argv[]) {
     s = socket(AF_UNIX, SOCK_STREAM, 0);
     if (s == -1) {
         perror("socket");
-        exit(EXIT_FAILURE);
+        goto efailure;
     }
     if (bind(s, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) == -1) {
         perror("bind");
-        exit(EXIT_FAILURE);
+        goto efailure;
     }
     if (listen(s, SOMAXCONN) == -1) {
         perror("listen");
-        exit(EXIT_FAILURE);
+        goto efailure;
     }
     while (ic < iterations) {
         if (time++ < startdelay && !control_thread_info) {
             sleep(1);
-            printf("Start time elapsed: [%u/%u] seconds\n", time, startdelay);
+            fprintf(logfile, "Start time elapsed: [%u/%u] seconds\n",
+                    time, startdelay);
             continue;
         }
         a = accept(s, (struct sockaddr *)&accept_addr, &len);
         if (a == -1) {
             perror("accept");
-            exit(EXIT_FAILURE);
+            goto efailure;
         }
         pathlen = len - offsetof(struct sockaddr_un, sun_path);
         len = sizeof(peer_addr);
         if (getpeername(a, (struct sockaddr *)&peer_addr, &len)== -1) {
             perror("getpeername");
-            exit(EXIT_FAILURE);
+            goto efailure;
         }
         pathlen = len - offsetof(struct sockaddr_un, sun_path);
         char peer[pathlen];
         memset(peer, 0, pathlen);
         strncpy(peer, peer_addr.sun_path+1, pathlen-1);
-        printf("Try: [%u/%u]\n", ic, iterations);
-        printf("getpeername sun_path(peer): [%s]\n", peer);
+        fprintf(logfile, "Try: [%u/%u]\n", ic, iterations);
+        fprintf(logfile, "getpeername sun_path(peer): [%s]\n", peer);
         char* t = peer;
         const char* unlocking_device = "";
         while((t = strtok(t, "/"))) {
@@ -283,7 +309,7 @@ int main(int argc, char* argv[]) {
             }
             t = strtok(NULL, ",");
         }
-        printf("Trying to unlock device:[%s]\n", unlocking_device);
+        fprintf(logfile, "Trying to unlock device:[%s]\n", unlocking_device);
         // Now we have all the information in peer, something like:
         // \099226072855ae2d8/cryptsetup/luks-6e38d5e1-7f83-43cc-819a-7416bcbf9f84
         // NUL random /cryptsetup/ DEVICE
@@ -295,19 +321,27 @@ int main(int argc, char* argv[]) {
             const char* entry_key;
             if((entry_key = get_key(unlocking_device))) {
                 send(a, entry_key, strlen(entry_key), 0);
+                fprintf(logfile, "Sending:[%s] to device:[%s]\n",
+                        entry_key, unlocking_device);
             } else {
-                printf("Device not found: [%s]\n", unlocking_device);
+                fprintf(logfile, "Device not found: [%s]\n", unlocking_device);
             }
         }
         close(a);
         ic++;
     }
-    printf("Closing (max tries reached)\n");
+    fprintf(logfile, "Closing (max tries reached)\n");
     pthread_kill(thid, SIGKILL);
     thread_loop = 0;
     if (pthread_join(thid, &tret) != 0) {
         perror("pthread_join error");
-        exit(EXIT_FAILURE);
+        goto efailure;
     }
     return EXIT_SUCCESS;
+efailure:
+    if(logfile) {
+        fclose(logfile);
+        logfile = NULL;
+    }
+    exit(EXIT_FAILURE);
 }
