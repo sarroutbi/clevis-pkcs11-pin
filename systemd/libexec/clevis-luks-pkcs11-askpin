@@ -59,7 +59,7 @@ do
         msg=""
         while [ ${next_device} -ne 1 ]; do
             uuid=$(echo "${line}" | awk '{print $2}')
-            noUUID=$(echo "${uuid}" | sed -e 's@UUID=@@g')
+            systemd_device=$(echo "${line}" | awk '{print $1}')
             if ! mapped_device=$(clevis_map_device "${uuid}"); then
                 echo "Could not check mapped device for UID:${uuid}"
                 next_device=1
@@ -74,21 +74,20 @@ do
             # Check if configuration contains a pin
             uri=$(clevis luks list -d "${mapped_device}" | awk -F '"uri":' '{print $2}' | awk -F '"' '{print $2}' | awk -F '"' '{print $1}')
             if ! pin=$(clevis_get_pin_value_from_uri "${uri}"); then
-                        pin=$(systemd-ask-password "${msg}Please, insert PIN for ${pkcs11_device} (${uuid}):")
+                pin=$(systemd-ask-password "${msg}Please, insert PIN for ${pkcs11_device} (${uuid}):")
             fi
             # Get key from PKCS11 pin here and feed AF_UNIX socket program
             echo "${pin}" > /run/systemd/clevis-pkcs11.pin
             if ! passphrase=$(clevis_luks_unlock_device "${mapped_device}") || [ -z "${passphrase}" ]; then
                 echo "Could not unlock device:${mapped_device}"
                 msg="$(get_pkcs11_error)"
-            continue
+                continue
             fi
             next_device=1
-            echo "Device:${mapped_device} unlocked successfully"
-            echo "${passphrase}" > /run/systemd/clevis-pkcs11."${noUUID}".passphrase
+            echo "Device:${mapped_device} unlocked successfully by clevis"
+            echo "Sending passphrase to systemd-cryptsetup, device:${systemd_device}"
             # Send passphrase to control socket
-            luks_device="luks-${noUUID}"
-            echo -n "${luks_device},${passphrase}" | socat UNIX-CONNECT:/run/systemd/clevis-pkcs11.control.sock -
+            echo -n "${systemd_device},${passphrase}" | socat UNIX-CONNECT:/run/systemd/clevis-pkcs11.control.sock -
         done
     fi
 done
