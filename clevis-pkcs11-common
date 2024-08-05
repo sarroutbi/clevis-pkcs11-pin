@@ -43,3 +43,16 @@ clevis_get_slot_from_uri() {
     echo "$1" | awk -F 'slot=' '{print $2}' | awk -F ";" '{print $1}' \
         | awk -F "?" '{print $1}'
 }
+
+clevis_get_max_pkcs11_slot() {
+    pkcs11-tool -L | grep -i "^slot" | awk '{print $2}' | tail -1
+}
+
+clevis_get_pkcs11_pubkey_slot_from_uri() {
+    for ((s=0; s<=$(clevis_get_max_pkcs11_slot); s++))
+    do
+        if pkcs11-tool --slot-index ${s} --type pubkey -O 2>/dev/null| grep -i 'uri:' | awk -F 'uri:' '{print $2}' | grep "$1" 2>/dev/null 1>/dev/null; then
+            echo "${s}"
+	fi
+    done
+}
