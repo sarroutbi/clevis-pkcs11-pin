@@ -53,10 +53,15 @@ clevis_pkcs11_filter_uri() {
 }
 
 clevis_get_pkcs11_pubkey_slot_from_uri() {
+    if ! module_path=$(clevis_get_module_path_from_uri "${1}"); then
+        module_opt=""
+    else
+	module_opt=" --module ${module_path}"
+    fi
     uri=$(clevis_pkcs11_filter_uri "${1}")
     for ((s=0; s<=$(clevis_get_max_pkcs11_slot); s++))
     do
-        if pkcs11-tool --slot-index ${s} --type pubkey -O 2>/dev/null| grep -i 'uri:' | awk -F 'uri:' '{print $2}' | grep "${uri}" 2>/dev/null 1>/dev/null; then
+        if pkcs11-tool ${module_opt} --slot-index ${s} --type pubkey -O 2>/dev/null | grep -i 'uri:' | awk -F 'uri:' '{print $2}' | tr -d ' ' | grep "${uri}" 2>/dev/null 1>/dev/null; then
             echo "${s}"
 	fi
     done
