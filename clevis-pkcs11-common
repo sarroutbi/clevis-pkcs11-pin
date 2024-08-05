@@ -48,7 +48,6 @@ clevis_get_model_from_uri() {
     echo "$1" | grep -E "model=" >/dev/null 2>&1 || return 1
     echo "$1" | awk -F 'model=' '{print $2}' | awk -F ";" '{print $1}' \
         | sed -E 's@%20@ @g' | sed -E 's@%21@!@g' | sed -E 's@%22@"@g' \
-        | sed -E 's@%20@ @g' | sed -E 's@%21@!@g' | sed -E 's@%22@"@g' \
         | sed -E 's@%23@#@g' | sed -E 's@%24@$@g' | sed -E 's@%25@%@g' \
         | sed -E 's@%26@&@g' | sed -E "s@%27@'@g" | sed -E 's@%28@(@g' \
         | sed -E 's@%29@)@g' | sed -E "s@%2A@*@g" | sed -E 's@%2B@+@g' \
