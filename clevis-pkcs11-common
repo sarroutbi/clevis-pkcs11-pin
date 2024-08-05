@@ -48,10 +48,15 @@ clevis_get_max_pkcs11_slot() {
     pkcs11-tool -L | grep -i "^slot" | awk '{print $2}' | tail -1
 }
 
+clevis_pkcs11_filter_uri() {
+    echo "$1" | sed -E 's@module-path=[a-z,A-Z,0-9,/,.]{1,};{0,1}@@' | sed -E 's@;$@@g'
+}
+
 clevis_get_pkcs11_pubkey_slot_from_uri() {
+    uri=$(clevis_pkcs11_filter_uri "${1}")
     for ((s=0; s<=$(clevis_get_max_pkcs11_slot); s++))
     do
-        if pkcs11-tool --slot-index ${s} --type pubkey -O 2>/dev/null| grep -i 'uri:' | awk -F 'uri:' '{print $2}' | grep "$1" 2>/dev/null 1>/dev/null; then
+        if pkcs11-tool --slot-index ${s} --type pubkey -O 2>/dev/null| grep -i 'uri:' | awk -F 'uri:' '{print $2}' | grep "${uri}" 2>/dev/null 1>/dev/null; then
             echo "${s}"
 	fi
     done
