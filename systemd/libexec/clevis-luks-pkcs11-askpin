@@ -74,8 +74,11 @@ do
             fi
             # Check if configuration contains a pin
             uri=$(clevis luks list -d "${mapped_device}" | awk -F '"uri":' '{print $2}' | awk -F '"' '{print $2}' | awk -F '"' '{print $1}')
+            if ! model=$(clevis_get_model_from_uri "${uri}"); then
+                model=${pkcs11_device}
+            fi
             if ! pin=$(clevis_get_pin_value_from_uri "${uri}"); then
-                pin=$(systemd-ask-password "${msg}Please, insert PIN for ${pkcs11_device} (${uuid}):")
+                pin=$(systemd-ask-password "${msg}Please, insert PIN for ${model} (${uuid}):")
             fi
             # Get key from PKCS11 pin here and feed AF_UNIX socket program
             echo "${pin}" > /run/systemd/clevis-pkcs11.pin
