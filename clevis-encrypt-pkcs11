@@ -114,7 +114,7 @@ if ! id=$(pkcs11-tool ${slot_opt} -O 2>${ERR} ${module_opt} \
     exit 1
 fi
 
-if ! pkcs11-tool ${module_opt} --read-object --type pubkey --id "${id}" \
+if ! pkcs11-tool ${slot_opt} ${module_opt} --read-object --type pubkey --id "${id}" \
     2> "${ERR}" > "${PKEY}"; then
     cat "${ERR}" >&2
     echo "Unable to obtain a public key from PKCS#11 device" >&2
