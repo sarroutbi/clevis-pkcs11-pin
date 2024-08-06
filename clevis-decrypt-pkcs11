@@ -20,7 +20,6 @@ set -eo pipefail
 #
 PIN_NAME=pkcs11
 PIN_FILE="/run/systemd/clevis-pkcs11.pin"
-DEFAULT_MODULE_PATH=/usr/lib64/pkcs11/opensc-pkcs11.so
 . clevis-pkcs11-common
 
 [ $# -eq 1 ] && [ "$1" == "--summary" ] && exit 2
