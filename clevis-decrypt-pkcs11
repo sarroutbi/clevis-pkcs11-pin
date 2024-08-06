@@ -2,7 +2,7 @@
 set -eo pipefail
 # vim: set ts=8 shiftwidth=4 softtabstop=4 expandtab smarttab colorcolumn=80:
 #
-# Copyright (c) 2021 Red Hat, Inc.
+# Copyright (c) 2024 Red Hat, Inc.
 # Author: Sergio Correia <scorreia@redhat.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -118,13 +118,8 @@ if ! jwk="$(pkcs11-tool --login --decrypt --input-file ${ENC} \
             || [ -z "${jwk}" ]; then
     cat "${ERR}" >&2
     echo "Unable to decrypt the JWK" >&2
-    # Check if it is an issue with PIN (to dump error appropriately)
-    if ! pkcs11-tool -pkcs11-tool --login --test -p "${PIN_value}"-login --test \
-                     -p "${PIN_value}" --module "${module_path}" \
-                     2>"${ERR}" >/dev/null; then
-        cat "${ERR}" >&2
-        echo "Invalid PIN" >&2
-    fi
+    # TODO: Verify invalid PIN more accurately
+    echo "Invalid PIN?" >&2
     exit 1
 fi
 
