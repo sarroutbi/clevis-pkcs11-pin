@@ -1,4 +1,5 @@
 #!/bin/bash
 /usr/libexec/clevis-luks-pkcs11-askpin &
-# Wait 30 seconds to attend keys. If control socket receives information, this time is cancelled
-clevis-pkcs11-afunix-socket-unlock -f /run/systemd/clevis-pkcs11.sock -s 30
+# Wait 120 seconds to attend key requests from systemd
+# If control socket starts receiving information, this time is cancelled
+clevis-pkcs11-afunix-socket-unlock -f /run/systemd/clevis-pkcs11.sock -s 120
