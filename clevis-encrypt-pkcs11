@@ -80,7 +80,7 @@ else
     slot_opt=" --slot-index=${slot}"
 fi
 
-if [ -z "{slot_opt}" ];
+if [ -z "${slot_opt}" ];
     if ! slot=$(clevis_get_pkcs11_pubkey_slot_from_uri "${uri}"); then
         slot_opt=""
     else
