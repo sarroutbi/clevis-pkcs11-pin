@@ -78,9 +78,25 @@ if ! clevis_valid_pkcs11_uri "${uri}"; then
     exit 1
 fi
 
-module_path=""
-if ! module_path="$(clevis_get_module_path_from_uri ${uri})"; then
-     module_path="${DEFAULT_MODULE_PATH}"
+module_opt=""
+if module_path="$(clevis_get_module_path_from_uri ${uri})"; then
+     module_opt="--module ${module_path}"
+fi
+
+if ! slot=$(clevis_get_slot_from_uri "${uri}"); then
+    slot_opt=""
+else
+    slot_opt=" --slot-index=${slot}"
+fi
+
+if [ -z "${slot_opt}" ]; then
+    if ! slot=$(clevis_get_pkcs11_pubkey_slot_from_uri "${uri}"); then
+         slot_opt=""
+    elif [ -n "${slot}" ]; then
+	 if [ "${slot}" != "0" ]; then
+             slot_opt=" --slot-index=${slot}"
+	 fi
+    fi
 fi
 
 # Check if key parameter is present.
@@ -114,7 +130,7 @@ if ! PIN_value="$(clevis_get_pin_value_from_uri ${uri})"; then
 fi
 
 if ! jwk="$(pkcs11-tool --login --decrypt --input-file ${ENC} \
-            -p ${PIN_value} --module ${module_path} ${mechanism_option} 2>${ERR})" \
+            -p ${PIN_value} ${module_opt} ${mechanism_option} ${slot_opt} 2>${ERR})" \
             || [ -z "${jwk}" ]; then
     cat "${ERR}" >&2
     echo "Unable to decrypt the JWK" >&2
