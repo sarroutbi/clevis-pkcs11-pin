@@ -75,7 +75,9 @@ do
             # Check if configuration contains a pin
             uri=$(clevis luks list -d "${mapped_device}" | awk -F '"uri":' '{print $2}' | awk -F '"' '{print $2}' | awk -F '"' '{print $1}')
             if ! model=$(clevis_get_model_from_uri "${uri}"); then
-                model=${pkcs11_device}
+                if ! model="device with serial number:$(clevis_get_serial_from_uri ${uri})"; then
+                    model=${pkcs11_device}
+                fi
             fi
             if ! pin=$(clevis_get_pin_value_from_uri "${uri}"); then
                 pin=$(systemd-ask-password "${msg}Please, insert PIN for ${model} (${uuid}):")
