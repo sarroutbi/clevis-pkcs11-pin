@@ -44,16 +44,40 @@ clevis_get_slot_from_uri() {
         | awk -F "?" '{print $1}'
 }
 
-clevis_get_model_from_uri() {
-    echo "$1" | grep -E "model=" >/dev/null 2>&1 || return 1
-    echo "$1" | awk -F 'model=' '{print $2}' | awk -F ";" '{print $1}' \
-        | sed -E 's@%20@ @g' | sed -E 's@%21@!@g' | sed -E 's@%22@"@g' \
+clevis_percent_unencoding() {
+    echo "$1" | sed -E 's@%20@ @g' | sed -E 's@%21@!@g' | sed -E 's@%22@"@g' \
         | sed -E 's@%23@#@g' | sed -E 's@%24@$@g' | sed -E 's@%25@%@g' \
         | sed -E 's@%26@&@g' | sed -E "s@%27@'@g" | sed -E 's@%28@(@g' \
         | sed -E 's@%29@)@g' | sed -E "s@%2A@*@g" | sed -E 's@%2B@+@g' \
         | sed -E 's@%2C@,@g' | sed -E "s@%2F@/@g" | sed -E 's@%3A@:@g' \
-        | sed -E 's@%3B@;@g' | sed -E "s@%3D@=@g" | sed -E 's@%3F@?@g' \
-        | awk -F "?" '{print $1}'
+        | sed -E 's@%3B@;@g' | sed -E "s@%3D@=@g" | sed -E 's@%3F@?@g'
+}
+
+clevis_get_model_from_uri() {
+    if ! echo "$1" | grep -E "model=" >/dev/null 2>&1; then
+        return 1
+    fi
+    model=$(echo "$1" | awk -F 'model=' '{print $2}' | awk -F ";" '{print $1}' \
+        | awk -F "?" '{print $1}')
+    clevis_percent_unencoding "${model}"
+}
+
+clevis_get_token_from_uri() {
+    if ! echo "$1" | grep -E "token=" >/dev/null 2>&1; then
+        return 1
+    fi
+    token=$(echo "$1" | awk -F 'token=' '{print $2}' | awk -F ";" '{print $1}' \
+        | awk -F "?" '{print $1}')
+    clevis_percent_unencoding "${token}"
+}
+
+clevis_get_serial_from_uri() {
+    if ! echo "$1" | grep -E "serial=" >/dev/null 2>&1; then
+        return 1
+    fi
+    serial=$(echo "$1" | awk -F 'serial=' '{print $2}' | awk -F ";" '{print $1}' \
+        | awk -F "?" '{print $1}')
+    clevis_percent_unencoding "${serial}"
 }
 
 clevis_get_max_pkcs11_slot() {
@@ -68,13 +92,15 @@ clevis_get_pkcs11_pubkey_slot_from_uri() {
     if ! module_path=$(clevis_get_module_path_from_uri "${1}"); then
         module_opt=""
     else
-	module_opt=" --module ${module_path}"
+        module_opt=" --module ${module_path}"
     fi
     uri=$(clevis_pkcs11_filter_uri "${1}")
     for ((s=0; s<=$(clevis_get_max_pkcs11_slot); s++))
     do
-        if pkcs11-tool ${module_opt} --slot-index ${s} --type pubkey -O 2>/dev/null | grep -i 'uri:' | awk -F 'uri:' '{print $2}' | tr -d ' ' | grep "${uri}" 2>/dev/null 1>/dev/null; then
+        if pkcs11-tool ${module_opt} --slot-index ${s} --type pubkey -O \
+            2>/dev/null | grep -i 'uri:' | awk -F 'uri:' '{print $2}' | \
+            tr -d ' ' | grep "${uri}" 2>/dev/null 1>/dev/null; then
             echo "${s}"
-	fi
+    fi
     done
 }
