@@ -39,8 +39,8 @@ clevis_get_pin_value_from_uri() {
 }
 
 clevis_get_slot_from_uri() {
-    echo "$1" | grep -E "slot=" >/dev/null 2>&1 || return 1
-    echo "$1" | awk -F 'slot=' '{print $2}' | awk -F ";" '{print $1}' \
+    echo "$1" | grep -E "slot-id=" >/dev/null 2>&1 || return 1
+    echo "$1" | awk -F 'slot-id=' '{print $2}' | awk -F ";" '{print $1}' \
         | awk -F "?" '{print $1}'
 }
 
