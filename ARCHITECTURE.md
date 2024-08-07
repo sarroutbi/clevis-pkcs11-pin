@@ -52,15 +52,6 @@ $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:model=PKCS%2315%20emulat
 serial=0a35ba26b062b9c5;token=clevis;id=%02;object=Encryption%20Key"}'
 ```
 
-### Configuration to provide a slot to Clevis
-Clevis will allow specifying the slot where a PKCS#11 device is located through the parameters provided to the URI:
-
-```
-$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:?slot-id=0"}'
-```
-
-It must be clarified that providing just the slot information will make Clevis to prompt also to select one of the available keys matched on the token in the selected slot, to avoid accidentally encryption with unwanted keys.
-
 
 ### Configuration to bind Clevis to the first PKCS11 device found
 An additional option is to provide Clevis a configuration so that the first PKCS11 device found by Clevis is bound. To do so, an empty URI can be provided as shown below:
@@ -106,6 +97,58 @@ the mechanism to use, in case the default one, `RSA-PKCS-OAEP`, is not valid:
 
 ```
 $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:", "mechanism":"RSA-PKCS"}'
+```
+
+### Multi-device configuration
+Clevis will allow specifying the slot where a PKCS#11 device is located through the parameters provided to the URI:
+
+```
+$ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:slot-id=0"}'
+```
+
+It must be clarified that providing just the slot information will make Clevis to guess one of the available keys matched on the token in the selected slot, which could cause accidentally encryption with unwanted keys. **However, it is not recommended to use slot as device selector, as slot order is not guaranteed between different boots**.
+
+There are two better options to distinguish between different PKCS#11 devices:
+
+1 - Multi-device configuration with public key object (**recommended**):
+
+With recent versions of `OpenSC`, `pkcs11-tool`, which is used by Clevis to handle most of the PKCS#11 commands, the PKCS#11 URI is dumped for both tokens and objects of a particular token:
+
+```
+$ pkcs11-tool -L | grep uri
+  uri                : pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;serial=42facd1f749ece7f;token=clevis
+  uri                : pkcs11:model=PKCS%2315%20emulated;manufacturer=OpenPGP%20project;serial=000f06080f4f;token=OpenPGP%20card%20%28User%20PIN%29
+$ pkcs11-tool -O --slot-index 1 --type pubkey | grep uri
+ising slot 0 with a present token (0x0)
+  uri:        pkcs11:model=PKCS%2315%20emulated;manufacturer=OpenPGP%20project;serial=000f06080f4f;token=OpenPGP%20card%20%28User%20PIN%29;id=%03;object=Authentication%20key;type=public
+```
+
+In this particular cases, when multiple PKCS#11 devices exist, select the public key of the particular device and bind it to Clevis:
+
+```
+$ clevis luks bind -d /dev/sda pkcs11 '{"uri":"pkcs11:model=PKCS%2315%20emulated;manufacturer=OpenPGP%20project;serial=000f06080f4f;token=OpenPGP%20card%20%28User%20PIN%29;id=%03;object=Authentication%20key;type=public"}'
+```
+**In case you are using module-path, you will have to use the one returned when providing --module option:**
+
+```
+$ pkcs11-tool --module /usr/lib64/libykcs11.so -O --type pubkey | grep uri
+ /usr/local/bin/pkcs11-tool.manual --module /usr/lib64/libykcs11.so -O --type pubkey | grep uri
+Using slot 0 with a present token (0x0)
+  uri:        pkcs11:model=YubiKey%20YK5;manufacturer=Yubico%20%28www.yubico.com%29;serial=28083311;token=YubiKey%20PIV%20%2328083311;id=%03;object=Public%20key%20for%20Key%20Management;type=public
+  uri:        pkcs11:model=YubiKey%20YK5;manufacturer=Yubico%20%28www.yubico.com%29;serial=28083311;token=YubiKey%20PIV%20%2328083311;id=%19;object=Public%20key%20for%20PIV%20Attestation;type=public
+$ clevis luks bind -d /dev/sda pkcs11 '{"uri":"pkcs11:model=YubiKey%20YK5;manufacturer=Yubico%20%28www.yubico.com%29;serial=28083311;token=YubiKey%20PIV%20%2328083311;id=%03;object=Public%20key%20for%20Key%20Management;type=public;module-path=/usr/lib64/libykcs11.so"}'
+```
+
+2 - Multi-device configuration with serial + token specification:
+
+**For versions where `pkcs11-tool` does not dump the URI for the tokens/objects**, specific identification will be "tried" by Clevis by using the device `serial` + `token` pair.
+In this type of scenarios, identification can be performed with these two parameters, although `model` should be provided also to ease Clevis informing about the device when asking for the PIN:
+
+```
+$ pkcs11-tool -L | grep uri
+  uri                : pkcs11:model=PKCS%2315%20emulated;manufacturer=piv_II;serial=42facd1f749ece7f;token=clevis
+  uri                : pkcs11:model=PKCS%2315%20emulated;manufacturer=OpenPGP%20project;serial=000f06080f4f;token=OpenPGP%20card%20%28User%20PIN%29
+$ clevis luks bind -d /dev/sda pkcs11 '{"uri":"pkcs11:model=PKCS%2315%20emulated;serial=000f06080f4f;token=OpenPGP%20card%20%28User%20PIN%29"}'
 ```
 
 ### Examples of errors on Clevis configuration
