@@ -74,18 +74,10 @@ else
     module_opt=" --module ${module_path}"
 fi
 
-if ! slot=$(clevis_get_slot_from_uri "${uri}"); then
-    slot_opt=""
+if ! slot=$(clevis_get_pkcs11_final_slot_from_uri "${uri}"); then
+   slot_opt=""
 else
-    slot_opt=" --slot-index=${slot}"
-fi
-
-if [ -z "${slot_opt}" ]; then
-    if ! slot=$(clevis_get_pkcs11_pubkey_slot_from_uri "${uri}"); then
-        slot_opt=""
-    else
-        slot_opt=" --slot-index=${slot}"
-    fi
+   slot_opt=" --slot-index=${slot}"
 fi
 
 if ! CLEVIS_PKCS11="$(mktemp -d)" || [ -z "${CLEVIS_PKCS11}" ]; then

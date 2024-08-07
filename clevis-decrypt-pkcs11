@@ -82,20 +82,10 @@ if module_path="$(clevis_get_module_path_from_uri ${uri})"; then
      module_opt="--module ${module_path}"
 fi
 
-if ! slot=$(clevis_get_slot_from_uri "${uri}"); then
+if ! slot=$(clevis_get_pkcs11_final_slot_from_uri "${uri}"); then
     slot_opt=""
 else
     slot_opt=" --slot-index=${slot}"
-fi
-
-if [ -z "${slot_opt}" ]; then
-    if ! slot=$(clevis_get_pkcs11_pubkey_slot_from_uri "${uri}"); then
-         slot_opt=""
-    elif [ -n "${slot}" ]; then
-	 if [ "${slot}" != "0" ]; then
-             slot_opt=" --slot-index=${slot}"
-	 fi
-    fi
 fi
 
 # Check if key parameter is present.
