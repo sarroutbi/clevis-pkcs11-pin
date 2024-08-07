@@ -46,13 +46,13 @@ if command -v pcscd; then
     echo -e "clevis-pkcs11: pcscd running?:[${PCSCD_PID}]\n"
     if ! ps auxf | grep "[p]cscd";
     then
-	if pcscd pcscd --help | grep disable-polkit 1>/dev/null 2>/dev/null; then
+        if pcscd pcscd --help | grep disable-polkit 1>/dev/null 2>/dev/null; then
             echo "clevis-pkcs11: starting pcscd with --disable-polkit option ..."
             pcscd --disable-polkit
-	else
+        else
             echo "clevis-pkcs11: starting pcscd ..."
             pcscd
-	fi
+        fi
     fi
 fi
 
