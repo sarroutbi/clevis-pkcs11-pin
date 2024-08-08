@@ -42,6 +42,7 @@ const char* VERSION = "v0.0.1";
 const uint16_t DEFAULT_MAX_ITERATIONS = 3;
 const uint16_t MAX_PATH = 1024;
 const uint16_t MAX_CONTROL_MSG = 1024;
+const uint8_t WAIT_CONTROL_THREAD_TIMER = 1;
 
 // Time to wait before trying to write key
 const uint16_t DEFAULT_START_DELAY = 0;
@@ -189,6 +190,7 @@ int main(int argc, char* argv[]) {
     char sock_file[MAX_PATH];
     char sock_control_file[MAX_PATH];
     socklen_t len = sizeof(accept_addr);
+    uint8_t wait_control_thread = 1;
     uint32_t iterations = DEFAULT_MAX_ITERATIONS;
     uint32_t startdelay = DEFAULT_START_DELAY;
     uint32_t ic = 0;
@@ -283,6 +285,13 @@ int main(int argc, char* argv[]) {
             fprintf(logfile, "Start time elapsed: [%u/%u] seconds\n",
                     time, startdelay);
             continue;
+        }
+        if (control_thread_info && wait_control_thread) {
+            sleep(WAIT_CONTROL_THREAD_TIMER);
+            fprintf(logfile, "Waiting %d second for control thread "
+                    "to receive complete information\n",
+                    WAIT_CONTROL_THREAD_TIMER);
+            wait_control_thread = 0;
         }
         a = accept(s, (struct sockaddr *)&accept_addr, &len);
         if (a == -1) {
