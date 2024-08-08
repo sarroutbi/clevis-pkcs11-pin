@@ -85,8 +85,6 @@ serial=0a35ba26b062b9c5;token=clevis;id=%02;object=Encryption%20Key?
 module-path=/usr/local/lib64/libmypkcs11.so"}'
 ```
 
-For security reasons, no PIN related information will be shown.
-
 ### Configuration to provide a different mechanism to PKCS#11 tool
 
 In the first phase of development, Clevis will be used in top of OpenSC to provide PKCS#11 functionality.
