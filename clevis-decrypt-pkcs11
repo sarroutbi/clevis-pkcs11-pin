@@ -1,6 +1,5 @@
 #!/bin/bash
 set -eo pipefail
-# vim: set ts=8 shiftwidth=4 softtabstop=4 expandtab smarttab colorcolumn=80:
 #
 # Copyright (c) 2024 Red Hat, Inc.
 # Author: Sergio Correia <scorreia@redhat.com>
