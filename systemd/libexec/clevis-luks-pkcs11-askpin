@@ -94,7 +94,7 @@ do
                 next_device=1
                 continue
             fi
-            # Check if configuration contains a pin
+            # Get configuration PKCS#11 URI
             uri=$(clevis luks list -d "${mapped_device}" | awk -F '"uri":' '{print $2}' | awk -F '"' '{print $2}' | awk -F '"' '{print $1}')
             if ! model=$(clevis_get_model_from_uri "${uri}"); then
                 if ! model="device with serial number:$(clevis_get_serial_from_uri ${uri})"; then

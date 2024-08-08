@@ -50,7 +50,8 @@ clevis_percent_unencoding() {
         | sed -E 's@%26@&@g' | sed -E "s@%27@'@g" | sed -E 's@%28@(@g' \
         | sed -E 's@%29@)@g' | sed -E "s@%2A@*@g" | sed -E 's@%2B@+@g' \
         | sed -E 's@%2C@,@g' | sed -E "s@%2F@/@g" | sed -E 's@%3A@:@g' \
-        | sed -E 's@%3B@;@g' | sed -E "s@%3D@=@g" | sed -E 's@%3F@?@g'
+        | sed -E 's@%3B@;@g' | sed -E "s@%3D@=@g" | sed -E 's@%3F@?@g' \
+        | sed -E 's!%40!@!g' | sed -E "s@%5B@[@g" | sed -E 's@%5D@]@g'
 }
 
 clevis_get_model_from_uri() {
