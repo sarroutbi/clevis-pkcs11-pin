@@ -1,4 +1,3 @@
-# clevis pkcs11 socket
 [Unit]
 Description=Clevis PKCS11 socket handler
 Requires=clevis-luks-pkcs11-askpass.service
