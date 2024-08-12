@@ -81,7 +81,12 @@ clevis_get_serial_from_uri() {
 }
 
 clevis_get_max_pkcs11_slot() {
-    pkcs11-tool -L | grep -i "^slot" | awk '{print $2}' | tail -1
+    if [ -z "${1}" ]; then
+        module_opt=""
+    else
+        module_opt="--module ${1}"
+    fi
+    pkcs11-tool -L ${module_opt} | grep -i "^slot" | awk '{print $2}' | tail -1
 }
 
 clevis_pkcs11_filter_uri() {
@@ -89,6 +94,7 @@ clevis_pkcs11_filter_uri() {
 }
 
 clevis_get_slot_by_serial_and_token_from_uri() {
+    module_path=""
     if ! module_path=$(clevis_get_module_path_from_uri "${1}"); then
         module_opt=""
     else
@@ -96,7 +102,7 @@ clevis_get_slot_by_serial_and_token_from_uri() {
     fi
     serialuri=$(clevis_get_serial_from_uri "${1}")
     tokenuri="$(clevis_get_token_from_uri "${1}")"
-    for ((s=0; s<=$(clevis_get_max_pkcs11_slot); s++))
+    for ((s=0; s<=$(clevis_get_max_pkcs11_slot "${module_path}"); s++))
     do
         if pkcs11-tool -L ${module_opt} 2>/dev/null | \
             grep -i 'serial num' | head -$((s+1)) | tail -1 | \
@@ -115,15 +121,16 @@ clevis_get_slot_by_serial_and_token_from_uri() {
 }
 
 clevis_get_pkcs11_pubkey_slot_from_uri() {
+    module_path=""
     if ! module_path=$(clevis_get_module_path_from_uri "${1}"); then
         module_opt=""
     else
         module_opt=" --module ${module_path}"
     fi
     uri=$(clevis_pkcs11_filter_uri "${1}")
-    for ((s=0; s<=$(clevis_get_max_pkcs11_slot); s++))
+    for ((s=0; s<=$(clevis_get_max_pkcs11_slot "${module_path}"); s++))
     do
-        if pkcs11-tool ${module_opt} --slot-index ${s} --type pubkey -O 2>/dev/null \
+        if pkcs11-tool -O ${module_opt} --slot-index ${s} --type pubkey 2>/dev/null \
             | grep -i 'uri:' | awk -F 'uri:' '{print $2}' | tr -d ' ' \
             | grep "${uri}" 2>/dev/null 1>/dev/null; then
             echo "${s}"
