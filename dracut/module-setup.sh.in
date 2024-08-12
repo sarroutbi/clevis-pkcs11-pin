@@ -31,6 +31,7 @@ install() {
         pkcs11-tool \
         head \
         tail \
+        socat \
         /usr/lib64/pcsc/drivers/ifd-ccid.bundle/Contents/Linux/libccid.so \
         /usr/lib64/pcsc/drivers/ifd-ccid.bundle/Contents/Info.plist \
         /usr/lib64/opensc-pkcs11.so \
