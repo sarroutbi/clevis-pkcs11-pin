@@ -35,6 +35,10 @@ install() {
         /usr/lib64/pcsc/drivers/ifd-ccid.bundle/Contents/Info.plist \
         /usr/lib64/opensc-pkcs11.so \
         /usr/lib64/pkcs11/opensc-pkcs11.so \
+        /usr/lib64/libopensc.so.11 \
+        /etc/opensc.conf \
+        /usr/lib64/ossl-modules/legacy.so \
+        /lib64/libpcsclite.so.1 \
         clevis-luks-common-functions \
         clevis-pkcs11-afunix-socket-unlock \
         clevis-pkcs11-common \
