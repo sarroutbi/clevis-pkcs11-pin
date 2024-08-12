@@ -271,7 +271,7 @@ At the initial stage, there is a branch in this feature [main developer's Clevis
 1 - Install Clevis required dependencies, including PKCS#11 dependencies:
 
 ```
-$ sudo dnf install -y gcc clang cmake jose libjose-devel cryptsetup-devel socat tpm2-tools luksmeta libluksmeta-devel opensc pcsc-lite
+$ sudo dnf install -y gcc clang cmake jose libjose-devel cryptsetup-devel socat tpm2-tools luksmeta libluksmeta-devel opensc pcsc-lite openssl
 ```
 
 2 - Clone appropriate branch:
