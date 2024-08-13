@@ -58,17 +58,31 @@ fi
 
 pkcs11-tool -L
 if ! pkcs11_device=$(pkcs11-tool -L | grep "Slot" | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g'); then
-    echo "No PKCS11 device detected / pkcs11-tool error"
+    echo "No PKCS11 device detected (without module option) / pkcs11-tool error"
     exit 1
 fi
 
 while [ -z "${pkcs11_device}" ]; do
-    option=$(systemd-ask-password --echo "Detected an empty PKCS#11 device, continue PKCS#11 detection? [yY/nN]")
-    if [ "${option}" == "N" ] || [ "${option}" == "n" ] ; then
-        echo "Won't continue PKCS11 device detection"
-        exit 1
+    module_paths=$(clevis_get_module_path_from_pkcs11_config "/etc/crypttab")
+    if [ -n "${module_paths}" ]; then
+        modules=$(echo ${module_paths} | tr ";" "\n")
+        for module in $modules; do
+            pkcs11_device=$(pkcs11-tool -L --module ${module} | grep "Slot" \
+                            | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
+            if [ -n "${pkcs11_device}" ]; then
+                break;
+            fi
+        done
     fi
-    pkcs11_device=$(pkcs11-tool -L | grep "Slot" | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
+    if [ -z "${pkcs11_device}" ]; then
+        option=$(systemd-ask-password --echo "Detected no PKCS#11 device, retry PKCS#11 detection? [yY/nN]")
+        if [ "${option}" == "N" ] || [ "${option}" == "n" ] ; then
+            echo "Won't continue PKCS11 device detection"
+            exit 1
+        fi
+    fi
+    pkcs11_device=$(pkcs11-tool -L | grep "Slot" \
+                        | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
 done
 echo "Detected PKCS11 device:${pkcs11_device}"
 
