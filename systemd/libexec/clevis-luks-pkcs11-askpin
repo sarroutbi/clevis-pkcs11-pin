@@ -82,7 +82,6 @@ do
         msg=""
         while [ ${next_device} -ne 1 ]; do
             uuid=$(echo "${line}" | awk '{print $2}')
-            systemd_device=$(echo "${line}" | awk '{print $1}')
             if ! mapped_device=$(clevis_map_device "${uuid}"); then
                 echo "Could not check mapped device for UID:${uuid}"
                 next_device=1
@@ -114,6 +113,7 @@ do
             next_device=1
             echo "Device:${mapped_device} unlocked successfully by clevis"
             # Store passphrases to send to control socket
+            systemd_device=$(echo "${line}" | awk '{print $1}')
             devices_array+=("${systemd_device},${passphrase}")
         done
     fi
