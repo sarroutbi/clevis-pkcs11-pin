@@ -20,7 +20,10 @@ if [ "$1" == "--summary" ]; then
     exit 1
 fi
 
+. clevis-luks-common-functions
+
 URI_EXPECTED_FORMAT="pkcs11:"
+DEFAULT_CRYPTTAB_FILE="/etc/crypttab"
 
 clevis_valid_pkcs11_uri() {
     echo "$1" | grep -E "^${URI_EXPECTED_FORMAT}" >/dev/null 2>&1 || return 1
@@ -30,6 +33,35 @@ clevis_get_module_path_from_uri() {
     echo "$1" | grep -E "module-path=" >/dev/null 2>&1 || return 1
     echo "$1" | awk -F 'module-path=' '{print $2}' | awk -F ";" '{print $1}' \
         | awk -F "?" '{print $1}'
+}
+
+clevis_get_module_path_from_pkcs11_config() {
+    local CRYPTTABFILE="$1"
+    local module_list=""
+    [ -z "${CRYPTTABFILE}" ] && CRYPTTABFILE="${DEFAULT_CRYPTTAB_FILE}"
+    while read -r line; do
+        uuid=$(echo "${line}" | awk '{print $2}')
+        if ! mapped_device=$(clevis_map_device "${uuid}"); then
+            echo "Could not check mapped device for UID:${uuid}"
+            continue
+        fi
+        # If no PKCS#11 configuration, advance to next device
+        if ! clevis luks list -d "${mapped_device}" | grep pkcs11 >/dev/null 2>&1; then
+            echo "Device:${mapped_device} does not contain PKCS#11 configuration"
+            continue
+        fi
+        # Get configuration PKCS#11 URI
+        uri=$(clevis luks list -d "${mapped_device}" | awk -F '"uri":' '{print $2}' \
+                | awk -F '"' '{print $2}' | awk -F '"' '{print $1}')
+            if module_path=$(clevis_get_module_path_from_uri "${uri}"); then
+            if [ -z "${module_list}" ]; then
+                module_list="${module_path}"
+            else
+                module_list="${module_list};${module_path}"
+            fi
+        fi
+    done < <(grep -v "^#" "${CRYPTTABFILE}")
+    echo "${module_list}"
 }
 
 clevis_get_pin_value_from_uri() {
