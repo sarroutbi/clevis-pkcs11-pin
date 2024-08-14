@@ -20,6 +20,18 @@
 . clevis-pkcs11-common
 
 pkcs11_device=""
+dracut_mode=false
+retry_mode=false
+too_many_errors=3
+
+while getopts ":dr" o; do
+    case "${o}" in
+        d) dracut_mode=true;;
+        r) retry_mode=true;;
+        *) ;;
+    esac
+done
+
 
 get_pkcs11_error() {
     if journalctl -u clevis-luks-pkcs11-askpass.service -b 0 | tail -3 \
@@ -56,33 +68,43 @@ if command -v pcscd; then
     fi
 fi
 
-pkcs11-tool -L
-if ! pkcs11_device=$(pkcs11-tool -L | grep "Slot" | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g'); then
+if [ "${dracut_mode}" != true ]; then
+    pkcs11-tool -L
+fi
+
+if ! pkcs11_device=$(pkcs11-tool -L 2>/dev/null | grep "Slot" | head -1 | \
+	                 awk -F ":" '{print $2}' | sed -e 's@^ *@@g'); then
     echo "No PKCS11 device detected (without module option) / pkcs11-tool error"
     exit 1
 fi
 
 while [ -z "${pkcs11_device}" ]; do
-    module_paths=$(clevis_get_module_path_from_pkcs11_config "/etc/crypttab")
-    if [ -n "${module_paths}" ]; then
-        modules=$(echo ${module_paths} | tr ";" "\n")
-        for module in $modules; do
-            pkcs11_device=$(pkcs11-tool -L --module ${module} | grep "Slot" \
-                            | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
-            if [ -n "${pkcs11_device}" ]; then
-                break;
-            fi
-        done
-    fi
-    if [ -z "${pkcs11_device}" ]; then
-        option=$(systemd-ask-password --echo "Detected no PKCS#11 device, retry PKCS#11 detection? [yY/nN]")
-        if [ "${option}" == "N" ] || [ "${option}" == "n" ] ; then
-            echo "Won't continue PKCS11 device detection"
-            exit 1
+    if [ "${dracut_mode}" != true ]; then
+        module_paths=$(clevis_get_module_path_from_pkcs11_config "/etc/crypttab")
+        if [ -n "${module_paths}" ]; then
+            modules=$(echo ${module_paths} | tr ";" "\n")
+            for module in $modules; do
+                pkcs11_device=$(pkcs11-tool -L --module ${module} | grep "Slot" \
+                                | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
+                if [ -n "${pkcs11_device}" ]; then
+                    break;
+                fi
+            done
         fi
     fi
-    pkcs11_device=$(pkcs11-tool -L | grep "Slot" \
-                        | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
+    if [ -z "${pkcs11_device}" ]; then
+        if [ "${retry_mode}" == true ]; then
+            option=$(systemd-ask-password --echo "Detected no PKCS#11 device, retry PKCS#11 detection? [yY/nN]")
+            if [ "${option}" == "N" ] || [ "${option}" == "n" ] ; then
+                echo "Won't continue PKCS11 device detection"
+                exit 0
+            fi
+            pkcs11_device=$(pkcs11-tool -L | grep "Slot" \
+                                | head -1 | awk -F ":" '{print $2}' | sed -e 's@^ *@@g')
+        else
+            exit 0
+        fi
+    fi
 done
 echo "Detected PKCS11 device:${pkcs11_device}"
 
@@ -93,6 +115,7 @@ do
     if echo "${line}" | grep -E "clevis-pkcs11.sock" 1>/dev/null;
     then
         next_device=0
+        errors=0
         msg=""
         while [ ${next_device} -ne 1 ]; do
             uuid=$(echo "${line}" | awk '{print $2}')
@@ -122,6 +145,11 @@ do
             if ! passphrase=$(clevis_luks_unlock_device "${mapped_device}") || [ -z "${passphrase}" ]; then
                 echo "Could not unlock device:${mapped_device}"
                 msg="$(get_pkcs11_error)"
+                ((errors++))
+                if [ ${errors} -eq ${too_many_errors} ]; then
+                    echo "Too many errors !!!" 1>&2
+                    next_device=1
+                fi
                 continue
             fi
             next_device=1
