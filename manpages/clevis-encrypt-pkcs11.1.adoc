@@ -64,12 +64,14 @@ This command uses the following configuration properties:
   It must be supported by pkcs11-tool. Examples of supported mechanisms are:
   - *RSA-PKCS-OAEP* (default one)
   - *RSA-PKCS*
-  - *SHA256*
-  - *SHA512*
 
 For a complete list of supported mechanisms, execute next command:
 
   $ pkcs11-tool -M
+
+It must be highlighted that previous command will show if the mechanism allows
+encryption/decryption, something that is required for PKCS#11 Clevis pin to work
+appropriately.
 
 == SEE ALSO
 
