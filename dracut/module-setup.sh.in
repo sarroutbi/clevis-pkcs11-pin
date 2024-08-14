@@ -30,13 +30,14 @@ install() {
         pcscd \
         pkcs11-tool \
         head \
-        tail \
         socat \
+        tail \
+        tr \
         /usr/lib64/pcsc/drivers/ifd-ccid.bundle/Contents/Linux/libccid.so \
         /usr/lib64/pcsc/drivers/ifd-ccid.bundle/Contents/Info.plist \
         /usr/lib64/opensc-pkcs11.so \
         /usr/lib64/pkcs11/opensc-pkcs11.so \
-        /usr/lib64/libopensc.so.11 \
+        /usr/lib64/libopensc.so* \
         /etc/opensc.conf \
         /usr/lib64/ossl-modules/legacy.so \
         /lib64/libpcsclite.so.1 \
