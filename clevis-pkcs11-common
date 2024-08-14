@@ -118,7 +118,9 @@ clevis_get_max_pkcs11_slot() {
     else
         module_opt="--module ${1}"
     fi
-    pkcs11-tool -L ${module_opt} | grep -i "^slot" | awk '{print $2}' | tail -1
+    if ! pkcs11-tool -L ${module_opt} | grep -i "^slot" | awk '{print $2}' | tail -1; then
+        echo "-1"
+    fi
 }
 
 clevis_pkcs11_filter_uri() {
