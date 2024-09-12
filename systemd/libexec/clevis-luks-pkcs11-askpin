@@ -78,6 +78,11 @@ if ! pkcs11_device=$(pkcs11-tool -L 2>/dev/null | grep "Slot" | head -1 | \
     exit 1
 fi
 
+if ! pkcs11-tool -O 2>/dev/null; then
+    pkcs11_device=""
+    echo "No objects in PKCS11 device detected"
+fi
+
 while [ -z "${pkcs11_device}" ]; do
     if [ "${dracut_mode}" != true ]; then
         module_paths=$(clevis_get_module_path_from_pkcs11_config "/etc/crypttab")
