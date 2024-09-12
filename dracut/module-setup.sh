@@ -23,7 +23,9 @@ depends() {
 }
 
 install() {
+    inst_hook initqueue 60 "${moddir}/clevis-pkcs11-prehook.sh"
     inst_hook initqueue/settled 60 "${moddir}/clevis-pkcs11-hook.sh"
+    inst_hook initqueue/online 60 "${moddir}/clevis-pkcs11-hook.sh"
 
     inst_multiple \
         pcscd \
