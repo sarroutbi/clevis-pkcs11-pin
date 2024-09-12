@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-if [ ! -f /run/systemd/clevis-pkcs11.run ] && [ -d /run/systemd ];
+if [ ! -f /run/systemd/clevis-pkcs11.pre.run ] && [ -d /run/systemd ];
 then
-  pcscd --disable-polkit
-  echo "" > /run/systemd/clevis-pkcs11.run
-  /usr/libexec/clevis-luks-pkcs11-askpin -d -r
+  clevis-pkcs11-afunix-socket-unlock -f /run/systemd/clevis-pkcs11.sock -s 60 &
+  echo "" > /run/systemd/clevis-pkcs11.pre.run
 fi
