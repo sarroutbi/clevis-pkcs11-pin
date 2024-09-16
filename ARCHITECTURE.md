@@ -161,17 +161,16 @@ $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri": "pkcs11:"}'
 ERROR: No PKCS11 devices detected
 ```
 
-Regarding configuration, "uri" key is mandatory for Clevis PKCS#11 pin configuration:
+Regarding configuration, "uri" key is recommended for Clevis PKCS#11 pin configuration. In case empty configuration is used, empty pkcs11: URI will be assumed
 
 ```
 $ clevis luks bind -d /dev/nvme0n1p2 pkcs11 '{}'
 Enter existing LUKS password:
-Missing the required PKCS#11 'uri' property!
-Unable to perform encryption with PIN 'pkcs11' and config '{}'
-Error adding new binding to /dev/nvme0n1p2
+$ clevis luks list -d /dev/nvme0n1p2
+1: pkcs11 '{"uri":"pkcs11:"}'
 ```
 
-As previously described, URI should have "pkcs11:" format:
+URI should have "pkcs11:" format:
 
 ```
 $  clevis luks bind -d /dev/nvme0n1p2 pkcs11 '{"uri":"pkcs12:"}'
