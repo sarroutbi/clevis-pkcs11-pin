@@ -48,8 +48,8 @@ const uint8_t WAIT_CONTROL_THREAD_TIMER = 1;
 const uint16_t DEFAULT_START_DELAY = 0;
 
 typedef struct {
-    char dev[MAX_DEVICE];
-    char key[MAX_KEY];
+    char dev[MAX_DEVICE+1];
+    char key[MAX_KEY+1];
 } key_entry_t;
 key_entry_t keys[MAX_ENTRIES];
 uint16_t entry_counter = 0;
@@ -72,6 +72,7 @@ get_control_socket_name(const char* file_sock, char* control_sock, uint32_t cont
 static void insert_device(const char* dev) {
     if(MAX_ENTRIES == entry_counter) {
         perror("No more entries accepted\n");
+        return;
     }
     pthread_mutex_lock(&mutex);
     strncpy(keys[entry_counter].dev, dev, MAX_DEVICE);
@@ -81,6 +82,7 @@ static void insert_device(const char* dev) {
 static void insert_key(const char* key) {
     if(MAX_ENTRIES == entry_counter) {
         perror("No more entries accepted\n");
+        return;
     }
     pthread_mutex_lock(&mutex);
     strncpy(keys[entry_counter++].key, key, MAX_KEY);
@@ -102,13 +104,13 @@ static const char* get_key(const char* dev) {
 static void* control_thread(void *targ) {
     // Create a socket to listen on control socket
     struct sockaddr_un control_addr, accept_addr;
-    int s, a;
-    char control_msg[MAX_CONTROL_MSG];
+    int s = 0, a = 0, r = 0;
+    char control_msg[MAX_CONTROL_MSG+1];
     const char* control_sock = (const char*)targ;
-    socklen_t len;
+    socklen_t len = 0;
     memset(&control_addr, 0, sizeof(control_addr));
     control_addr.sun_family = AF_UNIX;
-    strcpy(control_addr.sun_path, control_sock);
+    strncpy(control_addr.sun_path, control_sock, sizeof(control_addr.sun_path)-1);
     unlink(control_sock);
     s = socket(AF_UNIX, SOCK_STREAM, 0);
     if (s == -1) {
@@ -134,7 +136,14 @@ static void* control_thread(void *targ) {
             pthread_exit("control accept");
         }
         memset(control_msg, 0, MAX_CONTROL_MSG);
-        recv(a, control_msg, MAX_CONTROL_MSG, 0);
+        if((r = recv(a, control_msg, MAX_CONTROL_MSG, 0)) < 0) {
+            perror("recv error");
+            fprintf(logfile, "Error on reception\n");
+            close(a);
+            pthread_exit("control recv");
+        } else {
+            control_msg[r] = '\0';
+        }
         char* t = control_msg;
         int is_device = 1;
         fprintf(logfile, "Received control message:[%s]\n", t);
@@ -152,6 +161,7 @@ static void* control_thread(void *targ) {
             }
             t = strtok(NULL, ",");
         }
+        close(a);
     }
     return NULL;
 }
@@ -264,7 +274,7 @@ int main(int argc, char* argv[]) {
 
     memset(&sock_addr, 0, sizeof(sock_addr));
     sock_addr.sun_family = AF_UNIX;
-    strcpy(sock_addr.sun_path, sock_file);
+    strncpy(sock_addr.sun_path, sock_file, sizeof(sock_addr.sun_path)-1);
     unlink(sock_file);
     s = socket(AF_UNIX, SOCK_STREAM, 0);
     if (s == -1) {
@@ -325,11 +335,17 @@ int main(int argc, char* argv[]) {
         // If we need to unencrypt device, pick it from peer information
         // To return the key, just respond to socket returned by accept
         if(strlen(key)) {
-            send(a, key, strlen(key), 0);
+            if (send(a, key, strlen(key), 0) < 0) {
+                perror("key send error");
+                goto efailure;
+            }
         } else {
             const char* entry_key;
             if((entry_key = get_key(unlocking_device))) {
-                send(a, entry_key, strlen(entry_key), 0);
+                if (send(a, entry_key, strlen(entry_key), 0)< 0) {
+                    perror("key entry send error");
+                    goto efailure;
+                }
                 fprintf(logfile, "Sending:[%s] to device:[%s]\n",
                         entry_key, unlocking_device);
             } else {
