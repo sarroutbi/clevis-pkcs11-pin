@@ -60,6 +60,12 @@ An additional option is to provide Clevis a configuration so that the first PKCS
 $ clevis luks bind -d /dev/sda1 pkcs11 '{"uri":, "pkcs11:"}'
 ```
 
+A short alternative equivalent to previous command is shown below:
+
+```
+$ clevis luks bind -d /dev/sda1 pkcs11 '{}'
+```
+
 In this case, Clevis will be responsible for the detection of the device and, if no device is found, responsible for dumping the corresponding error.
 
 It must be clarified that providing an empty URI will make Clevis to prompt also to select one of the available keys matched on the token to avoid accidentally encryption with unwanted keys.
